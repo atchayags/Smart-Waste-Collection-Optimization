@@ -1,0 +1,144 @@
+
+--- T1  Normal operation (wave 1 + wave 2, 17 requests)
+  PASS  network has 13 locations
+  PASS  9 collection points registered
+  PASS  3 vehicles registered
+  PASS  9 wave-1 requests accepted
+  PASS  queue order starts with the three HIGH requests R01,R06,R09
+  PASS  all 9 wave-1 requests COMPLETED
+  PASS  every collection point emptied
+  PASS  kg delivered to depot equals kg that was at the points (2790.0)
+  PASS  after end of shift all vehicles are at the depot, empty and available
+  PASS  first four assignments were R01,R06,R09 (HIGH) then R02 (first MEDIUM): [1, 6, 9, 2]
+  PASS  9 COLLECTION records written
+  PASS  sum of per-vehicle collected kg equals depot total
+  PASS  wave 2: refills and 8 requests accepted without rejection
+  PASS  17 requests in total
+  PASS  all 17 requests COMPLETED
+  PASS  depot total = wave1 + wave2 waste
+  PASS  summary report mentions 17 total
+  PASS  history report is non-empty
+
+--- T2  Full vehicle -> depot unloading, capacity checks
+  PASS  request for CP8 (650 kg) rejected: larger than any vehicle (500 kg) -> IllegalArgumentException
+  PASS  R01 assigned directly (no unloading needed)
+  PASS  ST-1 now carries 380 kg
+  PASS  380 + 420 kg would exceed the 500 kg capacity
+  PASS  R02 assignment plans a depot unloading stop first
+  PASS  assignment stage is TO_DEPOT_UNLOAD
+  PASS  depot has received nothing yet
+  PASS  380 kg unloaded at the depot on the way
+  PASS  vehicle arrived at CP2 empty
+  PASS  ST-1 now carries 420 kg and is available
+  PASS  history shows the 380 kg UNLOAD before the second COLLECTION
+  PASS  both requests COMPLETED
+  PASS  confirming 9999 kg is refused -> IllegalArgumentException
+  PASS  confirming 0 kg is refused -> IllegalArgumentException
+  PASS  partial confirmation of 100 kg leaves 80 kg at CP1
+  PASS  return-to-depot unloads the remaining cargo (ST-1 returned to depot via CP1 -> J1 -> D0 (3.5 km) and unloaded 100.0 kg.)
+
+--- T3  Blocked road -> dynamic route recalculation
+  PASS  D0 -> CP1 shortest = 3.5 km via J1
+  PASS  with J1-CP1 blocked the shortest route is 7.9 km via J3 and CP2
+  PASS  blocked road is not used
+  PASS  reopening restores 3.5 km
+  PASS  CP5 unreachable when both of its roads are blocked
+  PASS  blocking a road that no active route uses causes no reroute
+  PASS  ST-1 (cheapest) assigned: Assigned R01 (CP1 HIGH, 180 kg) to ST-1 [Small Truck]. Plan: D0 -> J1 -> CP1 (3.5 km). Estimated trip 3.5 km, cost 21.0.
+  PASS  ST-1 is at J1 with 1.5 km left
+  PASS  block triggers a re-plan message: Re-planned ST-1: J1 -> CP1 (1.5 km)  =>  J1 -> J3 -> CP2 -> CP1 (5.9 km)
+  PASS  new route J1 -> J3 -> CP2 -> CP1 = 5.9 km
+  PASS  total distance driven = 2.0 + 5.9 = 7.9 km
+  PASS  one REROUTE record and rerouteCount == 1
+  PASS  request completed after the detour
+
+--- T4  Equal priorities -> arrival-order tie-break
+  PASS  queue order is H(R3,R5) M(R2,R4,R7) L(R1,R6): [3, 5, 2, 4, 7, 1, 6]
+  PASS  snapshot does not consume the queue
+  PASS  compareTo: equal priority, earlier arrival sorts first
+  PASS  compareTo: higher priority beats earlier arrival
+  PASS  single-vehicle collection order is [3, 5, 2, 4, 7, 1, 6]
+  PASS  three equal MEDIUMs: CP6, CP1, CP5 (arrival order)
+
+--- T5  Vehicle breakdown -> reassignment
+  PASS  ST-1 carries 380 kg after R1
+  PASS  R2 first goes to ST-1 (cheapest, needs depot unload)
+  PASS  ST-1 is at J2 still carrying 380 kg
+        ST-1 broke down at J2.
+        Recovery crew moved 380.0 kg of onboard cargo to the depot.
+        R02 returned to the queue with its original priority (HIGH) and arrival order.
+        Assigned R02 (CP3 HIGH, 260 kg) to LT-1 [Large Truck]. Plan: D0 -> J1 -> J3 -> CP3 (6.5 km). Estimated trip 6.5 km, cost 91.0.
+  PASS  ST-1 is BROKEN_DOWN
+  PASS  onboard cargo recovered to depot (380 kg), vehicle empty
+  PASS  ST-1 no longer has an active assignment
+  PASS  R2 reassigned to a different vehicle: LT-1
+  PASS  R2 keeps HIGH priority and arrival order #2, reassignCount == 1
+  PASS  BREAKDOWN and REASSIGNMENT records exist
+  PASS  R2 completed by LT-1
+  PASS  second breakdown report for same vehicle refused -> IllegalStateException
+  PASS  recalling a broken vehicle is refused -> IllegalStateException
+  PASS  breakdown of an idle vehicle works and requeues nothing
+  PASS  repaired ST-1 is at the depot and AVAILABLE
+  PASS  repairing a healthy vehicle is refused -> IllegalStateException
+
+--- T6  Deferred requests (no capable vehicle / unreachable) and retry
+  PASS  650 kg request deferred while only the 500 kg truck is working
+  PASS  deferred report lists it
+  PASS  retryDeferred re-queues 1 request
+  PASS  now assignable
+  PASS  CP5 request deferred (blocked roads)
+  PASS  after reopening, request is assigned
+  PASS  detour found (reroute counted)
+  PASS  vehicle with no route left releases the request back to the queue
+
+--- T7  Dijkstra vs Floyd-Warshall on sample + 40 random graphs
+  PASS  sample network: all-pairs match
+  PASS  sample network with 3 blocked roads: all-pairs match
+  PASS  40 random graphs (12 nodes, random blocks, some disconnected): all pairs match
+
+--- T8  MinHeap ordering
+  PASS  new heap is empty
+  PASS  extractMin on empty heap -> NoSuchElementException
+  PASS  size is 1000 after 1000 inserts (grows past initial capacity)
+  PASS  1000 extractions come out in non-decreasing order
+
+--- T9  Input validation
+  PASS  unknown collection point -> IllegalArgumentException
+  PASS  depot is not a collection point -> IllegalArgumentException
+  PASS  null priority -> IllegalArgumentException
+  PASS  duplicate open request for CP1 -> IllegalStateException
+  PASS  changing waste while a request is open -> IllegalStateException
+  PASS  negative waste level -> IllegalArgumentException
+  PASS  waste level above 5000 kg -> IllegalArgumentException
+  PASS  request for a point with no waste -> IllegalArgumentException
+  PASS  advance a vehicle that has no job -> IllegalStateException
+  PASS  advance by 0 hops -> IllegalArgumentException
+  PASS  unknown vehicle -> IllegalArgumentException
+  PASS  confirm with no job -> IllegalStateException
+  PASS  confirm before arrival -> IllegalStateException
+  PASS  recall a vehicle that is busy -> IllegalStateException
+  PASS  block a road that does not exist -> IllegalArgumentException
+  PASS  block a road at an unknown location -> IllegalArgumentException
+  PASS  block an already blocked road -> IllegalStateException
+  PASS  reopen a road that is open -> IllegalStateException
+  PASS  duplicate road -> IllegalArgumentException
+  PASS  zero-length road -> IllegalArgumentException
+  PASS  duplicate vehicle id -> IllegalArgumentException
+  PASS  shortest path to unknown node -> IllegalArgumentException
+  PASS  Priority.parse accepts H/m/Low/1
+  PASS  Priority.parse rejects junk
+
+--- T10 OOP: abstraction, inheritance, polymorphism, encapsulation
+  PASS  CollectionVehicle is abstract
+  PASS  inheritance: both trucks are CollectionVehicles
+  PASS  polymorphism: same call, different cost/km (6 vs 14)
+  PASS  polymorphism: same call, different travel time for 10 km (20 vs 24 min)
+  PASS  polymorphism: type names differ
+  PASS  encapsulation: overloading a vehicle is refused -> IllegalStateException
+  PASS  encapsulation: second load past capacity refused -> IllegalStateException
+  PASS  load unchanged after refused load
+  PASS  encapsulation: removing more waste than present -> IllegalArgumentException
+  PASS  composition: service owns network, planner, vehicles and points
+  PASS  unmodifiable vehicle list -> UnsupportedOperationException
+
+=== TEST SUMMARY: 118 checks passed, 0 failed ===

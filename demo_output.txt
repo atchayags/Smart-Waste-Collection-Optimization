@@ -1,0 +1,213 @@
+=== DEMO: Smart City Waste Collection Optimization - Marudham ===
+
+### 1. Road network, points and fleet
+Road network: 13 locations, 20 roads, 0 blocked
+  CP1  Bus Stand                  -> CP2(2.2) J1(1.5)
+  CP2  Municipal Market           -> CP1(2.2) CP3(1.5) J3(1.2)
+  CP3  Government Hospital        -> CP2(1.5) CP9(2.8) J3(2.0)
+  CP4  Textile Park               -> CP8(3.0) J2(2.5)
+  CP5  College Road               -> CP6(2.4) J1(3.0)
+  CP6  Temple Street              -> CP5(2.4) CP9(3.2) J3(1.8)
+  CP7  Riverside Colony           -> CP8(4.5) CP9(3.5) J2(4.0)
+  CP8  Industrial Estate          -> CP4(3.0) CP7(4.5) D0(5.0)
+  CP9  Lakeview Apartments        -> CP3(2.8) CP6(3.2) CP7(3.5)
+  D0   Marudham Central Depot     -> CP8(5.0) J1(2.0) J2(3.5)
+  J1   Gandhi Circle              -> CP1(1.5) CP5(3.0) D0(2.0) J3(2.5)
+  J2   Railway Junction           -> CP4(2.5) CP7(4.0) D0(3.5) J3(3.0)
+  J3   Market Cross               -> CP2(1.2) CP3(2.0) CP6(1.8) J1(2.5) J2(3.0)
+Collection points:
+  CP1  Bus Stand              zone=Central    waste=  180.0 kg
+  CP2  Municipal Market       zone=Central    waste=  420.0 kg
+  CP3  Government Hospital    zone=Central    waste=  260.0 kg
+  CP4  Textile Park           zone=East       waste=  380.0 kg
+  CP5  College Road           zone=West       waste=  150.0 kg
+  CP6  Temple Street          zone=West       waste=  210.0 kg
+  CP7  Riverside Colony       zone=South      waste=  300.0 kg
+  CP8  Industrial Estate      zone=East       waste=  650.0 kg
+  CP9  Lakeview Apartments    zone=South      waste=  240.0 kg
+Vehicles:
+  ST-1  Small Truck cap=   500 kg load=   0.0 kg at=D0   AVAILABLE   cost/km= 6.0 speed=30 km/h
+  LT-1  Large Truck cap=  1200 kg load=   0.0 kg at=D0   AVAILABLE   cost/km=14.0 speed=25 km/h
+  LT-2  Large Truck cap=  1000 kg load=   0.0 kg at=D0   AVAILABLE   cost/km=14.0 speed=25 km/h
+
+### 2. Wave 1 requests (9) and the priority queue order
+  Accepted R01  CP3  HIGH   arrival#1   est= 260.0 kg  PENDING  
+  Accepted R02  CP2  MEDIUM arrival#2   est= 420.0 kg  PENDING  
+  Accepted R03  CP8  LOW    arrival#3   est= 650.0 kg  PENDING  
+  Accepted R04  CP4  MEDIUM arrival#4   est= 380.0 kg  PENDING  
+  Accepted R05  CP7  LOW    arrival#5   est= 300.0 kg  PENDING  
+  Accepted R06  CP1  HIGH   arrival#6   est= 180.0 kg  PENDING  
+  Accepted R07  CP9  MEDIUM arrival#7   est= 240.0 kg  PENDING  
+  Accepted R08  CP5  LOW    arrival#8   est= 150.0 kg  PENDING  
+  Accepted R09  CP6  HIGH   arrival#9   est= 210.0 kg  PENDING  
+Pending requests (service order):
+   1. R01  CP3  HIGH   arrival#1   est= 260.0 kg  PENDING  
+   2. R06  CP1  HIGH   arrival#6   est= 180.0 kg  PENDING  
+   3. R09  CP6  HIGH   arrival#9   est= 210.0 kg  PENDING  
+   4. R02  CP2  MEDIUM arrival#2   est= 420.0 kg  PENDING  
+   5. R04  CP4  MEDIUM arrival#4   est= 380.0 kg  PENDING  
+   6. R07  CP9  MEDIUM arrival#7   est= 240.0 kg  PENDING  
+   7. R03  CP8  LOW    arrival#3   est= 650.0 kg  PENDING  
+   8. R05  CP7  LOW    arrival#5   est= 300.0 kg  PENDING  
+   9. R08  CP5  LOW    arrival#8   est= 150.0 kg  PENDING  
+
+### 3. Assign the first three requests (the three HIGH ones go first)
+  Assigned R01 (CP3 HIGH, 260 kg) to ST-1 [Small Truck]. Plan: D0 -> J1 -> J3 -> CP3 (6.5 km). Estimated trip 6.5 km, cost 39.0.
+  Assigned R06 (CP1 HIGH, 180 kg) to LT-1 [Large Truck]. Plan: D0 -> J1 -> CP1 (3.5 km). Estimated trip 3.5 km, cost 49.0.
+  Assigned R09 (CP6 HIGH, 210 kg) to LT-2 [Large Truck]. Plan: D0 -> J1 -> J3 -> CP6 (6.3 km). Estimated trip 6.3 km, cost 88.2.
+  R02 (CP2, MEDIUM) is waiting: every suitable vehicle is busy.
+
+### 4. ST-1 drives one hop, then road J1-J3 is blocked: dynamic re-planning
+  ST-1 moved 1 hop(s) to J1; remaining route J1 -> J3 -> CP3 (4.5 km).
+  Road J1-J3 is now blocked.
+  Re-planned LT-2: D0 -> J1 -> J3 -> CP6 (6.3 km)  =>  D0 -> J1 -> CP5 -> CP6 (7.4 km)
+  Re-planned ST-1: J1 -> J3 -> CP3 (4.5 km)  =>  J1 -> CP1 -> CP2 -> CP3 (5.2 km)
+
+### 5. LT-1 drives one hop, then breaks down: reassignment
+  LT-1 moved 1 hop(s) to J1; remaining route J1 -> CP1 (1.5 km).
+  LT-1 broke down at J1.
+  R06 returned to the queue with its original priority (HIGH) and arrival order.
+  R06 (CP1, HIGH) is waiting: every suitable vehicle is busy.
+
+### 6. Automatic processing of all remaining wave-1 requests
+  LT-2 collected 210.0 kg at CP6 (Temple Street). Point now holds 0.0 kg. Vehicle load 210.0/1000 kg.
+  ST-1 collected 260.0 kg at CP3 (Government Hospital). Point now holds 0.0 kg. Vehicle load 260.0/500 kg.
+  Assigned R06 (CP1 HIGH, 180 kg) to ST-1 [Small Truck]. Plan: CP3 -> CP2 -> CP1 (3.7 km). Estimated trip 3.7 km, cost 22.2.
+  Assigned R02 (CP2 MEDIUM, 420 kg) to LT-2 [Large Truck]. Plan: CP6 -> J3 -> CP2 (3.0 km). Estimated trip 3.0 km, cost 42.0.
+  LT-2 collected 420.0 kg at CP2 (Municipal Market). Point now holds 0.0 kg. Vehicle load 630.0/1000 kg.
+  ST-1 collected 180.0 kg at CP1 (Bus Stand). Point now holds 0.0 kg. Vehicle load 440.0/500 kg.
+  Assigned R04 (CP4 MEDIUM, 380 kg) to ST-1 [Small Truck]. Plan: depot first (CP1 -> J1 -> D0 (3.5 km)), then CP4 (D0 -> J2 -> CP4 (6.0 km)). Estimated trip 9.5 km, cost 57.0.
+  Assigned R07 (CP9 MEDIUM, 240 kg) to LT-2 [Large Truck]. Plan: CP2 -> CP3 -> CP9 (4.3 km). Estimated trip 4.3 km, cost 60.2.
+  LT-2 collected 240.0 kg at CP9 (Lakeview Apartments). Point now holds 0.0 kg. Vehicle load 870.0/1000 kg.
+  ST-1 collected 380.0 kg at CP4 (Textile Park). Point now holds 0.0 kg. Vehicle load 380.0/500 kg.
+  Assigned R03 (CP8 LOW, 650 kg) to LT-2 [Large Truck]. Plan: depot first (CP9 -> CP3 -> CP2 -> CP1 -> J1 -> D0 (10.0 km)), then CP8 (D0 -> CP8 (5.0 km)). Estimated trip 15.0 km, cost 210.0.
+  Assigned R05 (CP7 LOW, 300 kg) to ST-1 [Small Truck]. Plan: depot first (CP4 -> J2 -> D0 (6.0 km)), then CP7 (D0 -> J2 -> CP7 (7.5 km)). Estimated trip 13.5 km, cost 81.0.
+  LT-2 collected 650.0 kg at CP8 (Industrial Estate). Point now holds 0.0 kg. Vehicle load 650.0/1000 kg.
+  ST-1 collected 300.0 kg at CP7 (Riverside Colony). Point now holds 0.0 kg. Vehicle load 300.0/500 kg.
+  Assigned R08 (CP5 LOW, 150 kg) to ST-1 [Small Truck]. Plan: CP7 -> CP9 -> CP6 -> CP5 (9.1 km). Estimated trip 9.1 km, cost 54.6.
+  ST-1 collected 150.0 kg at CP5 (College Road). Point now holds 0.0 kg. Vehicle load 450.0/500 kg.
+  LT-1: broken down, left for repair.
+  LT-2 returned to depot via CP8 -> D0 (5.0 km) and unloaded 650.0 kg.
+  ST-1 returned to depot via CP5 -> J1 -> D0 (5.0 km) and unloaded 450.0 kg.
+================ SUMMARY REPORT ================
+Simulated time        : D1 12:40
+Requests              : 9 total | 9 completed | 0 pending | 0 assigned | 0 deferred
+Completed by priority : HIGH 3/3  MEDIUM 3/3  LOW 3/3  
+Waste collected       : 2790.0 kg (confirmed)
+Delivered to depot    : 2790.0 kg | still on vehicles: 0.0 kg
+Waste left at points  : 0.0 kg
+Fleet distance / fuel : 84.7 km / 801.8 cost units
+Reroutes: 2 | Breakdowns: 1 | Request reassignments: 1
+Per vehicle:
+  ST-1  Small Truck collections= 5 unloads= 3 collected= 1270.0 kg dist=  48.0 km cost=  288.0 AVAILABLE
+  LT-1  Large Truck collections= 0 unloads= 0 collected=    0.0 kg dist=   2.0 km cost=   28.0 BROKEN_DOWN
+  LT-2  Large Truck collections= 4 unloads= 2 collected= 1520.0 kg dist=  34.7 km cost=  485.8 AVAILABLE
+================================================
+
+### 7. Repair LT-1, reopen the road, load wave 2 (8 more requests, 17 in total)
+  LT-1 repaired and back at the depot, available again.
+  Road J1-J3 reopened. Routes already under way keep their current plan; new assignments will use it.
+  Accepted R10  CP2  HIGH   arrival#10  est= 380.0 kg  PENDING  
+  Accepted R11  CP6  MEDIUM arrival#11  est= 190.0 kg  PENDING  
+  Accepted R12  CP1  MEDIUM arrival#12  est= 200.0 kg  PENDING  
+  Accepted R13  CP3  HIGH   arrival#13  est= 300.0 kg  PENDING  
+  Accepted R14  CP8  HIGH   arrival#14  est= 700.0 kg  PENDING  
+  Accepted R15  CP4  LOW    arrival#15  est= 250.0 kg  PENDING  
+  Accepted R16  CP9  LOW    arrival#16  est= 220.0 kg  PENDING  
+  Accepted R17  CP7  MEDIUM arrival#17  est= 280.0 kg  PENDING  
+Pending requests (service order):
+   1. R10  CP2  HIGH   arrival#10  est= 380.0 kg  PENDING  
+   2. R13  CP3  HIGH   arrival#13  est= 300.0 kg  PENDING  
+   3. R14  CP8  HIGH   arrival#14  est= 700.0 kg  PENDING  
+   4. R11  CP6  MEDIUM arrival#11  est= 190.0 kg  PENDING  
+   5. R12  CP1  MEDIUM arrival#12  est= 200.0 kg  PENDING  
+   6. R17  CP7  MEDIUM arrival#17  est= 280.0 kg  PENDING  
+   7. R15  CP4  LOW    arrival#15  est= 250.0 kg  PENDING  
+   8. R16  CP9  LOW    arrival#16  est= 220.0 kg  PENDING  
+  Assigned R10 (CP2 HIGH, 380 kg) to ST-1 [Small Truck]. Plan: D0 -> J1 -> CP1 -> CP2 (5.7 km). Estimated trip 5.7 km, cost 34.2.
+  Assigned R13 (CP3 HIGH, 300 kg) to LT-1 [Large Truck]. Plan: D0 -> J1 -> J3 -> CP3 (6.5 km). Estimated trip 6.5 km, cost 91.0.
+  Assigned R14 (CP8 HIGH, 700 kg) to LT-2 [Large Truck]. Plan: D0 -> CP8 (5.0 km). Estimated trip 5.0 km, cost 70.0.
+  LT-1 collected 300.0 kg at CP3 (Government Hospital). Point now holds 0.0 kg. Vehicle load 300.0/1200 kg.
+  LT-2 collected 700.0 kg at CP8 (Industrial Estate). Point now holds 0.0 kg. Vehicle load 700.0/1000 kg.
+  ST-1 collected 380.0 kg at CP2 (Municipal Market). Point now holds 0.0 kg. Vehicle load 380.0/500 kg.
+  Assigned R11 (CP6 MEDIUM, 190 kg) to LT-1 [Large Truck]. Plan: CP3 -> J3 -> CP6 (3.8 km). Estimated trip 3.8 km, cost 53.2.
+  Assigned R12 (CP1 MEDIUM, 200 kg) to ST-1 [Small Truck]. Plan: depot first (CP2 -> J3 -> J1 -> D0 (5.7 km)), then CP1 (D0 -> J1 -> CP1 (3.5 km)). Estimated trip 9.2 km, cost 55.2.
+  Assigned R17 (CP7 MEDIUM, 280 kg) to LT-2 [Large Truck]. Plan: CP8 -> CP7 (4.5 km). Estimated trip 4.5 km, cost 63.0.
+  LT-1 collected 190.0 kg at CP6 (Temple Street). Point now holds 0.0 kg. Vehicle load 490.0/1200 kg.
+  LT-2 collected 280.0 kg at CP7 (Riverside Colony). Point now holds 0.0 kg. Vehicle load 980.0/1000 kg.
+  ST-1 collected 200.0 kg at CP1 (Bus Stand). Point now holds 0.0 kg. Vehicle load 200.0/500 kg.
+  Assigned R15 (CP4 LOW, 250 kg) to ST-1 [Small Truck]. Plan: CP1 -> CP2 -> J3 -> J2 -> CP4 (8.9 km). Estimated trip 8.9 km, cost 53.4.
+  Assigned R16 (CP9 LOW, 220 kg) to LT-1 [Large Truck]. Plan: CP6 -> CP9 (3.2 km). Estimated trip 3.2 km, cost 44.8.
+  LT-1 collected 220.0 kg at CP9 (Lakeview Apartments). Point now holds 0.0 kg. Vehicle load 710.0/1200 kg.
+  ST-1 collected 250.0 kg at CP4 (Textile Park). Point now holds 0.0 kg. Vehicle load 450.0/500 kg.
+  LT-1 returned to depot via CP9 -> CP3 -> J3 -> J1 -> D0 (9.3 km) and unloaded 710.0 kg.
+  LT-2 returned to depot via CP7 -> J2 -> D0 (7.5 km) and unloaded 980.0 kg.
+  ST-1 returned to depot via CP4 -> J2 -> D0 (6.0 km) and unloaded 450.0 kg.
+
+### 8. Final reports
+Collection history (51 records):
+  #001 [D1 08:00] ASSIGNMENT    veh=ST-1  req=R01  loc=CP3  kg=  260.0 km=  6.5 | HIGH priority; est. cost 39.0; route D0 -> J1 -> J3 -> CP3 (6.5 km)
+  #002 [D1 08:00] ASSIGNMENT    veh=LT-1  req=R06  loc=CP1  kg=  180.0 km=  3.5 | HIGH priority; est. cost 49.0; route D0 -> J1 -> CP1 (3.5 km)
+  #003 [D1 08:00] ASSIGNMENT    veh=LT-2  req=R09  loc=CP6  kg=  210.0 km=  6.3 | HIGH priority; est. cost 88.2; route D0 -> J1 -> J3 -> CP6 (6.3 km)
+  #004 [D1 08:04] ROAD_BLOCKED  veh=-     req=-    loc=J1-J3 kg=    0.0 km=  0.0 | Road J1-J3 blocked
+  #005 [D1 08:04] REROUTE       veh=LT-2  req=R09  loc=D0   kg=    0.0 km=  7.4 | road J1-J3 blocked; remaining 6.3 km -> 7.4 km via D0 -> J1 -> CP5 -> CP6
+  #006 [D1 08:04] REROUTE       veh=ST-1  req=R01  loc=J1   kg=    0.0 km=  5.2 | road J1-J3 blocked; remaining 4.5 km -> 5.2 km via J1 -> CP1 -> CP2 -> CP3
+  #007 [D1 08:09] BREAKDOWN     veh=LT-1  req=R06  loc=J1   kg=    0.0 km=  0.0 | Vehicle broke down while serving R06
+  #008 [D1 08:09] REASSIGNMENT  veh=LT-1  req=R06  loc=CP1  kg=    0.0 km=  0.0 | Request returned to queue for reassignment
+  #009 [D1 08:32] COLLECTION    veh=LT-2  req=R09  loc=CP6  kg=  210.0 km=  0.0 | Confirmed 210.0 kg at Temple Street; 0.0 kg left at point; vehicle load 210.0/1000 kg
+  #010 [D1 08:47] COLLECTION    veh=ST-1  req=R01  loc=CP3  kg=  260.0 km=  0.0 | Confirmed 260.0 kg at Government Hospital; 0.0 kg left at point; vehicle load 260.0/500 kg
+  #011 [D1 08:47] ASSIGNMENT    veh=ST-1  req=R06  loc=CP1  kg=  180.0 km=  3.7 | HIGH priority; est. cost 22.2; route CP3 -> CP2 -> CP1 (3.7 km)
+  #012 [D1 08:47] ASSIGNMENT    veh=LT-2  req=R02  loc=CP2  kg=  420.0 km=  3.0 | MEDIUM priority; est. cost 42.0; route CP6 -> J3 -> CP2 (3.0 km)
+  #013 [D1 08:59] COLLECTION    veh=LT-2  req=R02  loc=CP2  kg=  420.0 km=  0.0 | Confirmed 420.0 kg at Municipal Market; 0.0 kg left at point; vehicle load 630.0/1000 kg
+  #014 [D1 09:11] COLLECTION    veh=ST-1  req=R06  loc=CP1  kg=  180.0 km=  0.0 | Confirmed 180.0 kg at Bus Stand; 0.0 kg left at point; vehicle load 440.0/500 kg
+  #015 [D1 09:11] ASSIGNMENT    veh=ST-1  req=R04  loc=CP4  kg=  380.0 km=  9.5 | MEDIUM priority; est. cost 57.0; route depot first (CP1 -> J1 -> D0 (3.5 km)), then CP4 (D0 -> J2 -> CP4 (6.0 km))
+  #016 [D1 09:11] ASSIGNMENT    veh=LT-2  req=R07  loc=CP9  kg=  240.0 km=  4.3 | MEDIUM priority; est. cost 60.2; route CP2 -> CP3 -> CP9 (4.3 km)
+  #017 [D1 09:27] COLLECTION    veh=LT-2  req=R07  loc=CP9  kg=  240.0 km=  0.0 | Confirmed 240.0 kg at Lakeview Apartments; 0.0 kg left at point; vehicle load 870.0/1000 kg
+  #018 [D1 09:44] UNLOAD        veh=ST-1  req=-    loc=D0   kg=  440.0 km=  0.0 | Unloaded 440.0 kg at depot
+  #019 [D1 10:01] COLLECTION    veh=ST-1  req=R04  loc=CP4  kg=  380.0 km=  0.0 | Confirmed 380.0 kg at Textile Park; 0.0 kg left at point; vehicle load 380.0/500 kg
+  #020 [D1 10:01] ASSIGNMENT    veh=LT-2  req=R03  loc=CP8  kg=  650.0 km= 15.0 | LOW priority; est. cost 210.0; route depot first (CP9 -> CP3 -> CP2 -> CP1 -> J1 -> D0 (10.0 km)), then CP8 (D0 -> CP8 (5.0 km))
+  #021 [D1 10:01] ASSIGNMENT    veh=ST-1  req=R05  loc=CP7  kg=  300.0 km= 13.5 | LOW priority; est. cost 81.0; route depot first (CP4 -> J2 -> D0 (6.0 km)), then CP7 (D0 -> J2 -> CP7 (7.5 km))
+  #022 [D1 10:36] UNLOAD        veh=LT-2  req=-    loc=D0   kg=  870.0 km=  0.0 | Unloaded 870.0 kg at depot
+  #023 [D1 10:53] COLLECTION    veh=LT-2  req=R03  loc=CP8  kg=  650.0 km=  0.0 | Confirmed 650.0 kg at Industrial Estate; 0.0 kg left at point; vehicle load 650.0/1000 kg
+  #024 [D1 11:15] UNLOAD        veh=ST-1  req=-    loc=D0   kg=  380.0 km=  0.0 | Unloaded 380.0 kg at depot
+  #025 [D1 11:35] COLLECTION    veh=ST-1  req=R05  loc=CP7  kg=  300.0 km=  0.0 | Confirmed 300.0 kg at Riverside Colony; 0.0 kg left at point; vehicle load 300.0/500 kg
+  #026 [D1 11:35] ASSIGNMENT    veh=ST-1  req=R08  loc=CP5  kg=  150.0 km=  9.1 | LOW priority; est. cost 54.6; route CP7 -> CP9 -> CP6 -> CP5 (9.1 km)
+  #027 [D1 11:58] COLLECTION    veh=ST-1  req=R08  loc=CP5  kg=  150.0 km=  0.0 | Confirmed 150.0 kg at College Road; 0.0 kg left at point; vehicle load 450.0/500 kg
+  #028 [D1 12:20] UNLOAD        veh=LT-2  req=-    loc=D0   kg=  650.0 km=  0.0 | Unloaded 650.0 kg at depot
+  #029 [D1 12:40] UNLOAD        veh=ST-1  req=-    loc=D0   kg=  450.0 km=  0.0 | Unloaded 450.0 kg at depot
+  #030 [D1 12:40] REPAIR        veh=LT-1  req=-    loc=D0   kg=    0.0 km=  0.0 | Repaired and returned to depot
+  #031 [D1 12:40] ROAD_REOPENED veh=-     req=-    loc=J1-J3 kg=    0.0 km=  0.0 | Road J1-J3 reopened
+  #032 [D1 12:40] ASSIGNMENT    veh=ST-1  req=R10  loc=CP2  kg=  380.0 km=  5.7 | HIGH priority; est. cost 34.2; route D0 -> J1 -> CP1 -> CP2 (5.7 km)
+  #033 [D1 12:40] ASSIGNMENT    veh=LT-1  req=R13  loc=CP3  kg=  300.0 km=  6.5 | HIGH priority; est. cost 91.0; route D0 -> J1 -> J3 -> CP3 (6.5 km)
+  #034 [D1 12:40] ASSIGNMENT    veh=LT-2  req=R14  loc=CP8  kg=  700.0 km=  5.0 | HIGH priority; est. cost 70.0; route D0 -> CP8 (5.0 km)
+  #035 [D1 13:01] COLLECTION    veh=LT-1  req=R13  loc=CP3  kg=  300.0 km=  0.0 | Confirmed 300.0 kg at Government Hospital; 0.0 kg left at point; vehicle load 300.0/1200 kg
+  #036 [D1 13:18] COLLECTION    veh=LT-2  req=R14  loc=CP8  kg=  700.0 km=  0.0 | Confirmed 700.0 kg at Industrial Estate; 0.0 kg left at point; vehicle load 700.0/1000 kg
+  #037 [D1 13:34] COLLECTION    veh=ST-1  req=R10  loc=CP2  kg=  380.0 km=  0.0 | Confirmed 380.0 kg at Municipal Market; 0.0 kg left at point; vehicle load 380.0/500 kg
+  #038 [D1 13:34] ASSIGNMENT    veh=LT-1  req=R11  loc=CP6  kg=  190.0 km=  3.8 | MEDIUM priority; est. cost 53.2; route CP3 -> J3 -> CP6 (3.8 km)
+  #039 [D1 13:34] ASSIGNMENT    veh=ST-1  req=R12  loc=CP1  kg=  200.0 km=  9.2 | MEDIUM priority; est. cost 55.2; route depot first (CP2 -> J3 -> J1 -> D0 (5.7 km)), then CP1 (D0 -> J1 -> CP1 (3.5 km))
+  #040 [D1 13:34] ASSIGNMENT    veh=LT-2  req=R17  loc=CP7  kg=  280.0 km=  4.5 | MEDIUM priority; est. cost 63.0; route CP8 -> CP7 (4.5 km)
+  #041 [D1 13:48] COLLECTION    veh=LT-1  req=R11  loc=CP6  kg=  190.0 km=  0.0 | Confirmed 190.0 kg at Temple Street; 0.0 kg left at point; vehicle load 490.0/1200 kg
+  #042 [D1 14:04] COLLECTION    veh=LT-2  req=R17  loc=CP7  kg=  280.0 km=  0.0 | Confirmed 280.0 kg at Riverside Colony; 0.0 kg left at point; vehicle load 980.0/1000 kg
+  #043 [D1 14:25] UNLOAD        veh=ST-1  req=-    loc=D0   kg=  380.0 km=  0.0 | Unloaded 380.0 kg at depot
+  #044 [D1 14:37] COLLECTION    veh=ST-1  req=R12  loc=CP1  kg=  200.0 km=  0.0 | Confirmed 200.0 kg at Bus Stand; 0.0 kg left at point; vehicle load 200.0/500 kg
+  #045 [D1 14:37] ASSIGNMENT    veh=ST-1  req=R15  loc=CP4  kg=  250.0 km=  8.9 | LOW priority; est. cost 53.4; route CP1 -> CP2 -> J3 -> J2 -> CP4 (8.9 km)
+  #046 [D1 14:37] ASSIGNMENT    veh=LT-1  req=R16  loc=CP9  kg=  220.0 km=  3.2 | LOW priority; est. cost 44.8; route CP6 -> CP9 (3.2 km)
+  #047 [D1 14:50] COLLECTION    veh=LT-1  req=R16  loc=CP9  kg=  220.0 km=  0.0 | Confirmed 220.0 kg at Lakeview Apartments; 0.0 kg left at point; vehicle load 710.0/1200 kg
+  #048 [D1 15:12] COLLECTION    veh=ST-1  req=R15  loc=CP4  kg=  250.0 km=  0.0 | Confirmed 250.0 kg at Textile Park; 0.0 kg left at point; vehicle load 450.0/500 kg
+  #049 [D1 15:45] UNLOAD        veh=LT-1  req=-    loc=D0   kg=  710.0 km=  0.0 | Unloaded 710.0 kg at depot
+  #050 [D1 16:13] UNLOAD        veh=LT-2  req=-    loc=D0   kg=  980.0 km=  0.0 | Unloaded 980.0 kg at depot
+  #051 [D1 16:35] UNLOAD        veh=ST-1  req=-    loc=D0   kg=  450.0 km=  0.0 | Unloaded 450.0 kg at depot
+================ SUMMARY REPORT ================
+Simulated time        : D1 16:35
+Requests              : 17 total | 17 completed | 0 pending | 0 assigned | 0 deferred
+Completed by priority : HIGH 6/6  MEDIUM 6/6  LOW 5/5  
+Waste collected       : 5310.0 kg (confirmed)
+Delivered to depot    : 5310.0 kg | still on vehicles: 0.0 kg
+Waste left at points  : 0.0 kg
+Fleet distance / fuel : 154.3 km / 1537.8 cost units
+Reroutes: 2 | Breakdowns: 1 | Request reassignments: 1
+Per vehicle:
+  ST-1  Small Truck collections= 8 unloads= 5 collected= 2100.0 kg dist=  77.8 km cost=  466.8 AVAILABLE
+  LT-1  Large Truck collections= 3 unloads= 1 collected=  710.0 kg dist=  24.8 km cost=  347.2 AVAILABLE
+  LT-2  Large Truck collections= 6 unloads= 3 collected= 2500.0 kg dist=  51.7 km cost=  723.8 AVAILABLE
+================================================

@@ -1,0 +1,19 @@
+MARUDHAM SMART CITY WASTE OPTIMIZATION - RUN ON LOCALHOST (WINDOWS)
+
+Requirements: JDK 17+, Apache Maven, MySQL (XAMPP is fine), internet on first run.
+
+1. Start MySQL in XAMPP (green, port 3306). Root user with NO password is assumed;
+   if you set one, put it in src/main/resources/application.properties.
+2. Open a terminal INSIDE the folder that contains pom.xml
+   (this zip has a folder inside a folder - go to the inner one).
+3. Run:   mvn spring-boot:run      (or double-click RUN-WEBSITE-WINDOWS.bat)
+4. Wait for:  Tomcat started on ports 8080 (http), 8081 (http)
+
+URLs
+  Admin console   http://localhost:8080        login: admin / admin123
+  Citizen portal  http://localhost:8081        click "Create an account"
+  Driver console  http://localhost:8080/driver.html  (after admin login)
+
+Optional: set Windows env var ORS_API_KEY (OpenRouteService) for the external
+optimizer. Without it the Optimizer uses its built-in local algorithm.
+Change the admin password BEFORE first start via app.admin.password in application.properties.

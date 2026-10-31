@@ -1,0 +1,383 @@
+=== Smart City Waste Collection Optimization : Marudham Municipality ===
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   Please enter a whole number from 0 to 23.
+Choose an option:   Please enter a whole number from 0 to 23.
+Choose an option:   Accepted R01  CP3  HIGH   arrival#1   est= 260.0 kg  PENDING  
+  Accepted R02  CP2  MEDIUM arrival#2   est= 420.0 kg  PENDING  
+  Accepted R03  CP8  LOW    arrival#3   est= 650.0 kg  PENDING  
+  Accepted R04  CP4  MEDIUM arrival#4   est= 380.0 kg  PENDING  
+  Accepted R05  CP7  LOW    arrival#5   est= 300.0 kg  PENDING  
+  Accepted R06  CP1  HIGH   arrival#6   est= 180.0 kg  PENDING  
+  Accepted R07  CP9  MEDIUM arrival#7   est= 240.0 kg  PENDING  
+  Accepted R08  CP5  LOW    arrival#8   est= 150.0 kg  PENDING  
+  Accepted R09  CP6  HIGH   arrival#9   est= 210.0 kg  PENDING  
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Pending requests (service order):
+   1. R01  CP3  HIGH   arrival#1   est= 260.0 kg  PENDING  
+   2. R06  CP1  HIGH   arrival#6   est= 180.0 kg  PENDING  
+   3. R09  CP6  HIGH   arrival#9   est= 210.0 kg  PENDING  
+   4. R02  CP2  MEDIUM arrival#2   est= 420.0 kg  PENDING  
+   5. R04  CP4  MEDIUM arrival#4   est= 380.0 kg  PENDING  
+   6. R07  CP9  MEDIUM arrival#7   est= 240.0 kg  PENDING  
+   7. R03  CP8  LOW    arrival#3   est= 650.0 kg  PENDING  
+   8. R05  CP7  LOW    arrival#5   est= 300.0 kg  PENDING  
+   9. R08  CP5  LOW    arrival#8   est= 150.0 kg  PENDING  
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   Assigned R01 (CP3 HIGH, 260 kg) to ST-1 [Small Truck]. Plan: D0 -> J1 -> J3 -> CP3 (6.5 km). Estimated trip 6.5 km, cost 39.0.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   Assigned R06 (CP1 HIGH, 180 kg) to LT-1 [Large Truck]. Plan: D0 -> J1 -> CP1 (3.5 km). Estimated trip 3.5 km, cost 49.0.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   Assigned R09 (CP6 HIGH, 210 kg) to LT-2 [Large Truck]. Plan: D0 -> J1 -> J3 -> CP6 (6.3 km). Estimated trip 6.3 km, cost 88.2.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Vehicle id:   Unknown vehicle. Use ST-1, LT-1 or LT-2.
+Vehicle id: Hops to move (1-50):   Please enter a whole number from 1 to 50.
+Hops to move (1-50):   ST-1 moved 1 hop(s) to J1; remaining route J1 -> J3 -> CP3 (4.5 km).
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: First end of the road: Other end of the road:   Road J1-J3 is now blocked.
+  Re-planned LT-2: D0 -> J1 -> J3 -> CP6 (6.3 km)  =>  D0 -> J1 -> CP5 -> CP6 (7.4 km)
+  Re-planned ST-1: J1 -> J3 -> CP3 (4.5 km)  =>  J1 -> CP1 -> CP2 -> CP3 (5.2 km)
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Vehicle id: Actual kg collected (Enter = everything at the point):   Error: LT-1 has not arrived yet (2 hop(s) left).
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Vehicle id:   LT-1 broke down at D0.
+  R06 returned to the queue with its original priority (HIGH) and arrival order.
+  R06 (CP1, HIGH) is waiting: every suitable vehicle is busy.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: From: To:   D0 -> J1 -> CP1 -> CP2 -> CP3 -> CP9 (10.0 km)
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   LT-2 collected 210.0 kg at CP6 (Temple Street). Point now holds 0.0 kg. Vehicle load 210.0/1000 kg.
+  ST-1 collected 260.0 kg at CP3 (Government Hospital). Point now holds 0.0 kg. Vehicle load 260.0/500 kg.
+  Assigned R06 (CP1 HIGH, 180 kg) to ST-1 [Small Truck]. Plan: CP3 -> CP2 -> CP1 (3.7 km). Estimated trip 3.7 km, cost 22.2.
+  Assigned R02 (CP2 MEDIUM, 420 kg) to LT-2 [Large Truck]. Plan: CP6 -> J3 -> CP2 (3.0 km). Estimated trip 3.0 km, cost 42.0.
+  LT-2 collected 420.0 kg at CP2 (Municipal Market). Point now holds 0.0 kg. Vehicle load 630.0/1000 kg.
+  ST-1 collected 180.0 kg at CP1 (Bus Stand). Point now holds 0.0 kg. Vehicle load 440.0/500 kg.
+  Assigned R04 (CP4 MEDIUM, 380 kg) to ST-1 [Small Truck]. Plan: depot first (CP1 -> J1 -> D0 (3.5 km)), then CP4 (D0 -> J2 -> CP4 (6.0 km)). Estimated trip 9.5 km, cost 57.0.
+  Assigned R07 (CP9 MEDIUM, 240 kg) to LT-2 [Large Truck]. Plan: CP2 -> CP3 -> CP9 (4.3 km). Estimated trip 4.3 km, cost 60.2.
+  LT-2 collected 240.0 kg at CP9 (Lakeview Apartments). Point now holds 0.0 kg. Vehicle load 870.0/1000 kg.
+  ST-1 collected 380.0 kg at CP4 (Textile Park). Point now holds 0.0 kg. Vehicle load 380.0/500 kg.
+  Assigned R03 (CP8 LOW, 650 kg) to LT-2 [Large Truck]. Plan: depot first (CP9 -> CP3 -> CP2 -> CP1 -> J1 -> D0 (10.0 km)), then CP8 (D0 -> CP8 (5.0 km)). Estimated trip 15.0 km, cost 210.0.
+  Assigned R05 (CP7 LOW, 300 kg) to ST-1 [Small Truck]. Plan: depot first (CP4 -> J2 -> D0 (6.0 km)), then CP7 (D0 -> J2 -> CP7 (7.5 km)). Estimated trip 13.5 km, cost 81.0.
+  LT-2 collected 650.0 kg at CP8 (Industrial Estate). Point now holds 0.0 kg. Vehicle load 650.0/1000 kg.
+  ST-1 collected 300.0 kg at CP7 (Riverside Colony). Point now holds 0.0 kg. Vehicle load 300.0/500 kg.
+  Assigned R08 (CP5 LOW, 150 kg) to ST-1 [Small Truck]. Plan: CP7 -> CP9 -> CP6 -> CP5 (9.1 km). Estimated trip 9.1 km, cost 54.6.
+  ST-1 collected 150.0 kg at CP5 (College Road). Point now holds 0.0 kg. Vehicle load 450.0/500 kg.
+  Done. Use option 17 to recall vehicles to the depot.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   LT-1: broken down, left for repair.
+  LT-2 returned to depot via CP8 -> D0 (5.0 km) and unloaded 650.0 kg.
+  ST-1 returned to depot via CP5 -> J1 -> D0 (5.0 km) and unloaded 450.0 kg.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Collection point id (e.g. CP3): Priority (H/M/L or High/Medium/Low):   Invalid priority.
+Priority (H/M/L or High/Medium/Low):   Error: Government Hospital has no waste to collect.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Collection point id: New waste level in kg (0-5000):   Waste level updated.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Collection point id (e.g. CP3): Priority (H/M/L or High/Medium/Low):   Accepted: R10  CP3  HIGH   arrival#10  est= 250.0 kg  PENDING  
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Pending requests (service order):
+   1. R10  CP3  HIGH   arrival#10  est= 250.0 kg  PENDING  
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   Assigned R10 (CP3 HIGH, 250 kg) to ST-1 [Small Truck]. Plan: D0 -> J1 -> CP1 -> CP2 -> CP3 (7.2 km). Estimated trip 7.2 km, cost 43.2.
+  ST-1 collected 250.0 kg at CP3 (Government Hospital). Point now holds 0.0 kg. Vehicle load 250.0/500 kg.
+  Done. Use option 17 to recall vehicles to the depot.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option:   LT-1: broken down, left for repair.
+  LT-2: already at depot and empty.
+  ST-1 returned to depot via CP3 -> CP2 -> CP1 -> J1 -> D0 (7.2 km) and unloaded 250.0 kg.
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: ================ SUMMARY REPORT ================
+Simulated time        : D1 13:18
+Requests              : 10 total | 10 completed | 0 pending | 0 assigned | 0 deferred
+Completed by priority : HIGH 4/4  MEDIUM 3/3  LOW 3/3  
+Waste collected       : 3040.0 kg (confirmed)
+Delivered to depot    : 3040.0 kg | still on vehicles: 0.0 kg
+Waste left at points  : 0.0 kg
+Fleet distance / fuel : 97.1 km / 860.2 cost units
+Reroutes: 2 | Breakdowns: 1 | Request reassignments: 1
+Per vehicle:
+  ST-1  Small Truck collections= 6 unloads= 4 collected= 1520.0 kg dist=  62.4 km cost=  374.4 AVAILABLE
+  LT-1  Large Truck collections= 0 unloads= 0 collected=    0.0 kg dist=   0.0 km cost=    0.0 BROKEN_DOWN
+  LT-2  Large Truck collections= 4 unloads= 2 collected= 1520.0 kg dist=  34.7 km cost=  485.8 AVAILABLE
+================================================
+
+------------------------------ MENU ------------------------------
+ 1  View road network              12  Block a road
+ 2  View collection points         13  Reopen a road
+ 3  View vehicles                  14  Report vehicle breakdown
+ 4  Load sample requests (wave 1)  15  Repair a vehicle
+ 5  Load sample requests (wave 2)  16  Return a vehicle to depot & unload
+ 6  Submit a new request           17  End shift (recall all vehicles)
+ 7  View pending requests          18  Shortest path between two locations
+ 8  Assign next request            19  Compare priority vs nearest-neighbour order
+ 9  Advance a vehicle (N hops)     20  View history
+10  Confirm collection             21  View summary report
+11  Process everything (auto)      22  Deferred requests (view / retry)
+23  Update a point's waste level    0  Exit
+------------------------------------------------------------------
+Choose an option: Goodbye.
