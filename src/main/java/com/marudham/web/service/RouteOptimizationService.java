@@ -34,6 +34,12 @@ public class RouteOptimizationService {
     private final RestClient restClient = RestClient.create();
     private final RoutePlanner routePlanner = new RoutePlanner();
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private RoadRestrictionRepository roadRestrictionRepo;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private RouteRevisionRepository routeRevisionRepo;
+
     public RouteOptimizationService(RoutePlanRepository routePlanRepo,
                                     RouteStopRepository routeStopRepo,
                                     CollectionRequestRepository requestRepo,
@@ -48,6 +54,39 @@ public class RouteOptimizationService {
         this.truckRepo = truckRepo;
         this.depotRepo = depotRepo;
         this.auditService = auditService;
+    }
+
+    public static class SegmentDetail {
+        public int segmentIndex;
+        public String fromName;
+        public double fromLat;
+        public double fromLng;
+        public String toName;
+        public double toLat;
+        public double toLng;
+        public double distanceKm;
+        public double drivingTimeMin;
+        public double collectionTimeMin;
+        public double totalTimeMin;
+        public String status = "PENDING"; // PENDING, COMPLETED, IN_PROGRESS
+
+        public SegmentDetail() {}
+        public SegmentDetail(int segmentIndex, String fromName, double fromLat, double fromLng,
+                             String toName, double toLat, double toLng, double distanceKm,
+                             double drivingTimeMin, double collectionTimeMin, double totalTimeMin, String status) {
+            this.segmentIndex = segmentIndex;
+            this.fromName = fromName;
+            this.fromLat = fromLat;
+            this.fromLng = fromLng;
+            this.toName = toName;
+            this.toLat = toLat;
+            this.toLng = toLng;
+            this.distanceKm = distanceKm;
+            this.drivingTimeMin = drivingTimeMin;
+            this.collectionTimeMin = collectionTimeMin;
+            this.totalTimeMin = totalTimeMin;
+            this.status = status;
+        }
     }
 
     public static class OptimizationRequest {
@@ -122,6 +161,15 @@ public class RouteOptimizationService {
         public double depotLng;
         public Map<String, Integer> priorityDistribution = new LinkedHashMap<>();
         public List<RouteStopPreview> plannedStops = new ArrayList<>();
+        public List<SegmentDetail> segments = new ArrayList<>();
+        public double drivingTimeMin;
+        public double collectionTimeMin;
+        public String estimatedDepotArrival;
+        public int totalStopsCount;
+        public int completedStopsCount;
+        public int remainingStopsCount;
+        public int revisionNumber = 1;
+        public String recalculationReason;
         public List<UnassignedRequestDetail> unassignedRequests = new ArrayList<>();
         public List<String> warnings = new ArrayList<>();
     }
@@ -177,6 +225,13 @@ public class RouteOptimizationService {
         preview.capacityUtilizationPct = Math.round(Math.min(100.0, (preview.totalWasteKg / truck.getCapacityKg()) * 100.0) * 10.0) / 10.0;
         preview.totalDistanceKm = Math.round(calc.distanceKm * 10.0) / 10.0;
         preview.estimatedDurationMin = Math.round(calc.durationMin * 10.0) / 10.0;
+        preview.drivingTimeMin = Math.round(calc.drivingTimeMin * 10.0) / 10.0;
+        preview.collectionTimeMin = Math.round(calc.collectionTimeMin * 10.0) / 10.0;
+        preview.totalStopsCount = orderedStops.size();
+        preview.completedStopsCount = 0;
+        preview.remainingStopsCount = orderedStops.size();
+        preview.estimatedDepotArrival = LocalDateTime.now().plusMinutes((long) Math.ceil(preview.estimatedDurationMin)).format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a"));
+        preview.segments = calc.segments;
         preview.routingMethod = calc.method;
         preview.routeGeometryJson = calc.geometryJson;
         preview.truckId = truck.getId();
@@ -259,6 +314,10 @@ public class RouteOptimizationService {
         );
         plan.setStartLocationName(startInfo.name);
         plan.setDepotName(depot.getName());
+        plan.setAssignedDriverUsername(truck.getAssignedDriverUsername());
+        try {
+            plan.setSegmentDetailsJson(objectMapper.writeValueAsString(calc.segments));
+        } catch (Exception ignored) {}
 
         int order = 1;
         for (CollectionRequest cr : orderedStops) {
@@ -428,7 +487,7 @@ public class RouteOptimizationService {
             return Double.compare(b.getWasteKg(), a.getWasteKg());
         });
 
-        double currentLoad = truck.getAssignedLoadKg();
+        double currentLoad = (truck.getCurrentRouteId() != null) ? truck.getAssignedLoadKg() : 0.0;
         double capacity = truck.getCapacityKg();
 
         for (CollectionRequest r : sorted) {
@@ -528,6 +587,25 @@ public class RouteOptimizationService {
                     net.addRoad(pid, other.getId(), crossKm);
                 }
             }
+        }
+
+        // Municipal bypass road between J1 and J2
+        if (net.getRoad(j1, j2) == null) {
+            net.addRoad(j1, j2, 2.8);
+        }
+
+        // Apply active road restrictions from MySQL
+        if (roadRestrictionRepo != null) {
+            try {
+                List<RoadRestriction> activeRestrictions = roadRestrictionRepo.findByActiveTrue();
+                for (RoadRestriction rr : activeRestrictions) {
+                    if (rr.getFromNode() != null && rr.getToNode() != null) {
+                        if (net.getRoad(rr.getFromNode(), rr.getToNode()) != null && !net.isBlocked(rr.getFromNode(), rr.getToNode())) {
+                            net.blockRoad(rr.getFromNode(), rr.getToNode());
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
         }
 
         // Add Origin Node if distinct from Depot
@@ -640,52 +718,100 @@ public class RouteOptimizationService {
     // -------------------------------------------------------------
     // 5. ROAD ROUTE & GEOMETRY CALCULATION
     // -------------------------------------------------------------
-    private static class RouteCalculation {
-        double distanceKm;
-        double durationMin;
-        String method;
-        String geometryJson;
+    public static class RouteCalculation {
+        public double distanceKm;
+        public double durationMin;
+        public double drivingTimeMin;
+        public double collectionTimeMin;
+        public String method;
+        public String geometryJson;
+        public List<SegmentDetail> segments = new ArrayList<>();
     }
 
-    private RouteCalculation calculateDijkstraRoadRoute(RoadNetwork net, Depot depot,
+    public RouteCalculation calculateDijkstraRoadRoute(RoadNetwork net, Depot depot,
                                                        String startNodeId, double startLat, double startLng,
                                                        List<CollectionRequest> stops,
                                                        Map<String, CollectionPoint> pointMap,
                                                        Map<String, double[]> nodeCoords) {
-        // Collect waypoint coordinates: Start -> Stop1 -> Stop2 ... -> Depot
-        List<double[]> waypoints = new ArrayList<>();
-        waypoints.add(new double[]{startLat, startLng});
-        for (CollectionRequest r : stops) {
-            CollectionPoint cp = pointMap.get(r.getPointId());
-            waypoints.add(new double[]{cp.getLatitude(), cp.getLongitude()});
-        }
-        waypoints.add(new double[]{depot.getLatitude(), depot.getLongitude()});
-
-        // 1. Try OpenRouteService if API key configured
-        if (orsApiKey != null && !orsApiKey.isBlank()) {
-            try {
-                RouteCalculation orsCalc = callOpenRouteService(waypoints);
-                if (orsCalc != null && orsCalc.distanceKm > 0.1) return orsCalc;
-            } catch (Exception ignored) {}
-        }
-
-        // 2. Try OSRM driving router
-        try {
-            RouteCalculation osrmCalc = callOsrmDriving(waypoints);
-            if (osrmCalc != null && osrmCalc.distanceKm > 0.1) return osrmCalc;
-        } catch (Exception ignored) {}
+        boolean hasActiveRestrictions = roadRestrictionRepo != null && !roadRestrictionRepo.findByActiveTrue().isEmpty();
 
         // 3. Authoritative Dijkstra Road Network Shortest Path
         RouteCalculation dijkstraCalc = new RouteCalculation();
         double totalDijkstraDist = 0.0;
+        double totalDrivingTimeMin = 0.0;
+        double totalCollectionTimeMin = 0.0;
         List<List<Double>> pathCoords = new ArrayList<>();
+        List<SegmentDetail> segments = new ArrayList<>();
 
         String cur = startNodeId;
-        for (CollectionRequest r : stops) {
-            PathResult leg = routePlanner.shortestPath(net, cur, r.getPointId());
-            totalDijkstraDist += leg.isReachable() ? leg.getDistanceKm() : haversineKm(nodeCoords.get(cur)[0], nodeCoords.get(cur)[1], pointMap.get(r.getPointId()).getLatitude(), pointMap.get(r.getPointId()).getLongitude()) * 1.30;
+        String curName = (nodeCoords.containsKey(cur) && cur.equals("DEPOT")) ? depot.getName() : "Route Start";
+        double curLat = startLat;
+        double curLng = startLng;
+        int segIdx = 1;
 
-            for (String node : leg.getNodes()) {
+        for (CollectionRequest r : stops) {
+            CollectionPoint cp = pointMap.get(r.getPointId());
+            double targetLat = (cp != null && cp.getLatitude() != null) ? cp.getLatitude() : (nodeCoords.containsKey(r.getPointId()) ? nodeCoords.get(r.getPointId())[0] : curLat);
+            double targetLng = (cp != null && cp.getLongitude() != null) ? cp.getLongitude() : (nodeCoords.containsKey(r.getPointId()) ? nodeCoords.get(r.getPointId())[1] : curLng);
+            String targetName = r.getPointName();
+
+            PathResult leg = routePlanner.shortestPath(net, cur, r.getPointId());
+            double legDist = leg.isReachable() ? leg.getDistanceKm() : haversineKm(curLat, curLng, targetLat, targetLng) * 1.30;
+            legDist = Math.max(0.2, Math.round(legDist * 10.0) / 10.0);
+            double legDriveTime = Math.max(0.5, Math.round((legDist / 28.0) * 60.0 * 10.0) / 10.0);
+            double legCollectTime = 5.0; // 5 mins service time per collection stop
+            double legTotalTime = Math.round((legDriveTime + legCollectTime) * 10.0) / 10.0;
+
+            totalDijkstraDist += legDist;
+            totalDrivingTimeMin += legDriveTime;
+            totalCollectionTimeMin += legCollectTime;
+
+            segments.add(new SegmentDetail(
+                    segIdx++,
+                    curName, curLat, curLng,
+                    targetName, targetLat, targetLng,
+                    legDist, legDriveTime, legCollectTime, legTotalTime, "PENDING"
+            ));
+
+            if (leg.isReachable() && leg.getNodes() != null && !leg.getNodes().isEmpty()) {
+                for (String node : leg.getNodes()) {
+                    double[] c = nodeCoords.get(node);
+                    if (c != null) {
+                        if (pathCoords.isEmpty() || !isSameCoord(pathCoords.get(pathCoords.size() - 1), c[1], c[0])) {
+                            pathCoords.add(List.of(c[1], c[0]));
+                        }
+                    }
+                }
+            } else {
+                pathCoords.add(List.of(targetLng, targetLat));
+            }
+
+            cur = r.getPointId();
+            curName = targetName;
+            curLat = targetLat;
+            curLng = targetLng;
+        }
+
+        // Final Leg back to Depot
+        PathResult returnLeg = routePlanner.shortestPath(net, cur, "DEPOT");
+        double returnDist = returnLeg.isReachable() ? returnLeg.getDistanceKm() : haversineKm(curLat, curLng, depot.getLatitude(), depot.getLongitude()) * 1.30;
+        returnDist = Math.max(0.2, Math.round(returnDist * 10.0) / 10.0);
+        double returnDriveTime = Math.max(0.5, Math.round((returnDist / 28.0) * 60.0 * 10.0) / 10.0);
+        double returnCollectTime = 0.0; // Depot unloading
+        double returnTotalTime = returnDriveTime;
+
+        totalDijkstraDist += returnDist;
+        totalDrivingTimeMin += returnDriveTime;
+
+        segments.add(new SegmentDetail(
+                segIdx++,
+                curName, curLat, curLng,
+                depot.getName() + " (Final Unloading)", depot.getLatitude(), depot.getLongitude(),
+                returnDist, returnDriveTime, returnCollectTime, returnTotalTime, "PENDING"
+        ));
+
+        if (returnLeg.isReachable() && returnLeg.getNodes() != null && !returnLeg.getNodes().isEmpty()) {
+            for (String node : returnLeg.getNodes()) {
                 double[] c = nodeCoords.get(node);
                 if (c != null) {
                     if (pathCoords.isEmpty() || !isSameCoord(pathCoords.get(pathCoords.size() - 1), c[1], c[0])) {
@@ -693,24 +819,16 @@ public class RouteOptimizationService {
                     }
                 }
             }
-            cur = r.getPointId();
-        }
-
-        // Final Leg back to Depot
-        PathResult returnLeg = routePlanner.shortestPath(net, cur, "DEPOT");
-        totalDijkstraDist += returnLeg.isReachable() ? returnLeg.getDistanceKm() : haversineKm(nodeCoords.get(cur)[0], nodeCoords.get(cur)[1], depot.getLatitude(), depot.getLongitude()) * 1.30;
-        for (String node : returnLeg.getNodes()) {
-            double[] c = nodeCoords.get(node);
-            if (c != null) {
-                if (pathCoords.isEmpty() || !isSameCoord(pathCoords.get(pathCoords.size() - 1), c[1], c[0])) {
-                    pathCoords.add(List.of(c[1], c[0]));
-                }
-            }
+        } else {
+            pathCoords.add(List.of(depot.getLongitude(), depot.getLatitude()));
         }
 
         dijkstraCalc.distanceKm = Math.max(1.0, Math.round(totalDijkstraDist * 10.0) / 10.0);
-        dijkstraCalc.durationMin = Math.round(((dijkstraCalc.distanceKm / 28.0) * 60.0 + (stops.size() * 5.0)) * 10.0) / 10.0;
-        dijkstraCalc.method = "DIJKSTRA_ROAD_NETWORK";
+        dijkstraCalc.drivingTimeMin = Math.round(totalDrivingTimeMin * 10.0) / 10.0;
+        dijkstraCalc.collectionTimeMin = Math.round(totalCollectionTimeMin * 10.0) / 10.0;
+        dijkstraCalc.durationMin = Math.round((totalDrivingTimeMin + totalCollectionTimeMin) * 10.0) / 10.0;
+        dijkstraCalc.method = hasActiveRestrictions ? "DIJKSTRA_ROAD_NETWORK (RESTRICTION_AVOIDED)" : "DIJKSTRA_ROAD_NETWORK";
+        dijkstraCalc.segments = segments;
 
         try {
             dijkstraCalc.geometryJson = objectMapper.writeValueAsString(pathCoords);
@@ -719,6 +837,176 @@ public class RouteOptimizationService {
         }
 
         return dijkstraCalc;
+    }
+
+    public String[] findNearestRoadEdge(double lat, double lng) {
+        Depot depot = getOrCreateDepot();
+        Map<String, CollectionPoint> pointMap = new HashMap<>();
+        for (CollectionPoint cp : pointRepo.findAll()) {
+            if (cp.getId() != null) pointMap.put(cp.getId(), cp);
+        }
+        Map<String, double[]> nodeCoords = new HashMap<>();
+        RoadNetwork net = buildMunicipalRoadNetwork(depot, pointMap, "DEPOT", depot.getLatitude(), depot.getLongitude(), nodeCoords);
+
+        String bestFrom = "J1";
+        String bestTo = "J3";
+        double bestDist = Double.MAX_VALUE;
+
+        for (String u : net.getLocationIds()) {
+            for (RoadNetwork.Road r : net.getNeighbours(u)) {
+                String v = r.getDestination();
+                if (u.compareTo(v) < 0) { // check each undirected edge once
+                    double[] c1 = nodeCoords.get(u);
+                    double[] c2 = nodeCoords.get(v);
+                    if (c1 != null && c2 != null) {
+                        double d = distanceToSegmentKm(lat, lng, c1[0], c1[1], c2[0], c2[1]);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            bestFrom = u;
+                            bestTo = v;
+                        }
+                    }
+                }
+            }
+        }
+        return new String[]{bestFrom, bestTo};
+    }
+
+    private double distanceToSegmentKm(double pLat, double pLng, double aLat, double aLng, double bLat, double bLng) {
+        double dAB2 = (bLat - aLat) * (bLat - aLat) + (bLng - aLng) * (bLng - aLng);
+        if (dAB2 < 1e-12) {
+            return haversineKm(pLat, pLng, aLat, aLng);
+        }
+        double t = ((pLat - aLat) * (bLat - aLat) + (pLng - aLng) * (bLng - aLng)) / dAB2;
+        t = Math.max(0.0, Math.min(1.0, t));
+        double projLat = aLat + t * (bLat - aLat);
+        double projLng = aLng + t * (bLng - aLng);
+        return haversineKm(pLat, pLng, projLat, projLng);
+    }
+
+    @Transactional
+    public RoutePlan recalculateRouteForRoadIssue(Long routePlanId, RoadIssue issue, String adminUsername) {
+        Optional<RoutePlan> optPlan = routePlanRepo.findById(routePlanId);
+        if (optPlan.isEmpty()) return null;
+        RoutePlan plan = optPlan.get();
+
+        if ("COMPLETED".equalsIgnoreCase(plan.getStatus()) || "CANCELLED".equalsIgnoreCase(plan.getStatus())) {
+            return plan;
+        }
+
+        // 1. Snapshot previous route version into revision history
+        if (routeRevisionRepo != null) {
+            RouteRevision rev = new RouteRevision(
+                    plan.getId(),
+                    plan.getRevisionNumber(),
+                    "Revision prior to recalculation for " + issue.getIssueType() + " (#" + issue.getId() + "): " + issue.getDescription(),
+                    issue.getId(),
+                    plan.getTotalDistanceKm(),
+                    plan.getEstimatedDurationMin(),
+                    plan.getRouteGeometryJson(),
+                    plan.getRoutingMethod(),
+                    adminUsername
+            );
+            routeRevisionRepo.save(rev);
+        }
+
+        List<RouteStop> allStops = routeStopRepo.findByRoutePlanIdOrderByStopOrderAsc(plan.getId());
+        List<RouteStop> completedStops = allStops.stream().filter(s -> "COMPLETED".equals(s.getStatus())).toList();
+        List<RouteStop> remainingStops = allStops.stream().filter(s -> !"COMPLETED".equals(s.getStatus())).toList();
+
+        if (remainingStops.isEmpty()) {
+            return plan;
+        }
+
+        Depot depot = getOrCreateDepot();
+
+        // 2. Determine starting location for remaining route
+        double startLat;
+        double startLng;
+        String startNodeId;
+        String startLocName;
+
+        Optional<Truck> truckOpt = truckRepo.findById(plan.getTruckId());
+        if (truckOpt.isPresent() && truckOpt.get().getLatitude() != null && truckOpt.get().getLongitude() != null) {
+            Truck truck = truckOpt.get();
+            startLat = truck.getLatitude();
+            startLng = truck.getLongitude();
+            startNodeId = "TRUCK_GPS_" + truck.getId();
+            startLocName = truck.getName() + " (Live GPS Position)";
+        } else if (!completedStops.isEmpty()) {
+            RouteStop lastDone = completedStops.get(completedStops.size() - 1);
+            startLat = lastDone.getLatitude();
+            startLng = lastDone.getLongitude();
+            startNodeId = lastDone.getPointId();
+            startLocName = lastDone.getPointName() + " (Last Completed Stop)";
+        } else {
+            startLat = plan.getPlannedStartLat();
+            startLng = plan.getPlannedStartLng();
+            startNodeId = "ORIGIN";
+            startLocName = plan.getStartLocationName();
+        }
+
+        // 3. Load Collection Points map for remaining stops
+        Map<String, CollectionPoint> pointMap = new HashMap<>();
+        for (RouteStop s : remainingStops) {
+            pointRepo.findById(s.getPointId()).ifPresent(cp -> pointMap.put(cp.getId(), cp));
+        }
+
+        // 4. Build Municipal Road Network with the blocked restriction active
+        Map<String, double[]> nodeCoords = new HashMap<>();
+        RoadNetwork net = buildMunicipalRoadNetwork(depot, pointMap, startNodeId, startLat, startLng, nodeCoords);
+
+        // Ensure issue edge is strictly blocked
+        if (issue.getFromNode() != null && issue.getToNode() != null) {
+            if (net.getRoad(issue.getFromNode(), issue.getToNode()) != null && !net.isBlocked(issue.getFromNode(), issue.getToNode())) {
+                try {
+                    net.blockRoad(issue.getFromNode(), issue.getToNode());
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // 5. Wrap remaining stops as CollectionRequests for Dijkstra ordering
+        List<CollectionRequest> remainingRequests = new ArrayList<>();
+        Map<Long, RouteStop> reqToStopMap = new HashMap<>();
+        for (RouteStop s : remainingStops) {
+            CollectionRequest mockReq = new CollectionRequest(s.getPointId(), s.getPointName(), s.getPriority(), s.getExpectedWasteKg(), "GENERAL", plan.getTruckName());
+            mockReq.setId(s.getRequestId() != null ? s.getRequestId() : s.getId());
+            remainingRequests.add(mockReq);
+            reqToStopMap.put(mockReq.getId(), s);
+        }
+
+        List<CollectionRequest> orderedRemaining = orderStopsWithDijkstra(net, startNodeId, "DEPOT", remainingRequests, pointMap);
+
+        // 6. Calculate new road path & geometry avoiding blocked edges
+        RouteCalculation calc = calculateDijkstraRoadRoute(net, depot, startNodeId, startLat, startLng, orderedRemaining, pointMap, nodeCoords);
+
+        // 7. Re-sequence stop orders for remaining stops
+        int newOrder = completedStops.size() + 1;
+        for (CollectionRequest r : orderedRemaining) {
+            RouteStop s = reqToStopMap.get(r.getId());
+            if (s != null) {
+                s.setStopOrder(newOrder++);
+                routeStopRepo.save(s);
+            }
+        }
+
+        // 8. Update RoutePlan in MySQL
+        plan.setRouteGeometryJson(calc.geometryJson);
+        plan.setTotalDistanceKm(calc.distanceKm);
+        plan.setEstimatedDurationMin(calc.durationMin);
+        plan.setRoutingMethod("DIJKSTRA_ROAD_NETWORK (RESTRICTION_AVOIDED)");
+        plan.setRevisionNumber(plan.getRevisionNumber() + 1);
+        plan.setLastRecalculatedAt(LocalDateTime.now());
+        plan.setTriggeredByRoadIssueId(issue.getId());
+        plan.setRecalculationReason("Rerouted to avoid " + issue.getIssueType() + " at " + (issue.getLocationName() != null ? issue.getLocationName() : "road " + issue.getFromNode() + "-" + issue.getToNode()) + " (Issue #" + issue.getId() + ")");
+
+        try {
+            plan.setSegmentDetailsJson(objectMapper.writeValueAsString(calc.segments));
+        } catch (Exception ignored) {}
+
+        RoutePlan saved = routePlanRepo.save(plan);
+        auditService.record("ROUTE_RECALCULATED", "Route #" + plan.getId() + " recalculated to revision " + plan.getRevisionNumber() + " (" + calc.distanceKm + " km, " + calc.durationMin + " min) avoiding " + issue.getFromNode() + "-" + issue.getToNode(), adminUsername, plan.getId());
+        return saved;
     }
 
     private boolean isSameCoord(List<Double> coord, double lng, double lat) {

@@ -89,12 +89,27 @@ public class DriverController {
             out.put("nextStop", nextStop);
 
             long completedCount = stopList.stream().filter(s -> "COMPLETED".equals(s.getStatus())).count();
-            out.put("completedStopsCount", completedCount);
-            out.put("totalStopsCount", stopList.size());
-            out.put("remainingWasteKg", stopList.stream()
+            int remainingCount = (int) (stopList.size() - completedCount);
+            double remainingWaste = stopList.stream()
                     .filter(s -> !"COMPLETED".equals(s.getStatus()))
                     .mapToDouble(RouteStop::getExpectedWasteKg)
-                    .sum());
+                    .sum();
+
+            out.put("completedStopsCount", completedCount);
+            out.put("remainingStopsCount", remainingCount);
+            out.put("totalStopsCount", stopList.size());
+            out.put("remainingWasteKg", Math.round(remainingWaste * 10.0) / 10.0);
+            out.put("revisionNumber", plan.getRevisionNumber());
+            out.put("recalculationReason", plan.getRecalculationReason());
+            out.put("lastRecalculatedAt", plan.getLastRecalculatedAt());
+            out.put("segmentDetailsJson", plan.getSegmentDetailsJson());
+
+            double driveTime = Math.round((plan.getTotalDistanceKm() / 28.0) * 60.0 * 10.0) / 10.0;
+            double collectTime = Math.round(remainingCount * 5.0 * 10.0) / 10.0;
+            out.put("drivingTimeMin", driveTime);
+            out.put("collectionTimeMin", collectTime);
+            out.put("totalEstimatedDurationMin", plan.getEstimatedDurationMin());
+            out.put("estimatedDepotArrival", LocalDateTime.now().plusMinutes((long) Math.ceil(plan.getEstimatedDurationMin())).format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a")));
         } else {
             out.put("route", null);
             out.put("stops", List.of());

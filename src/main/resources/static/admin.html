@@ -519,6 +519,7 @@
       <li class="nav-item"><a href="#fleet"><span class="nav-icon">🚛</span> Fleet & Vehicles</a></li>
       <li class="nav-item"><a href="#requests"><span class="nav-icon">📋</span> Waste Requests</a></li>
       <li class="nav-item"><a href="#optimizer"><span class="nav-icon">⚡</span> Route Optimizer & Map</a></li>
+      <li class="nav-item"><a href="#issues"><span class="nav-icon">⚠️</span> Road Issues & Rerouting</a></li>
       <li class="nav-item"><a href="#reports"><span class="nav-icon">📊</span> Reports & Audit Trail</a></li>
       <li class="nav-item"><a href="#users"><span class="nav-icon">👥</span> Users & Access</a></li>
     </ul>
@@ -955,11 +956,29 @@
 
         <div id="map"></div>
 
-        <div style="display: flex; gap: 20px; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+        <div style="display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); align-items: center;">
           <span><b style="color: #047857;">🚛</b> Vehicle Marker</span>
           <span><b style="color: #0369a1;">🏭</b> Destination Depot</span>
           <span><b style="color: #b45309;">◉ (1,2..)</b> Ordered Stops</span>
           <span><b style="color: #047857;">━▶━</b> Road Route Geometry</span>
+          <span><b style="color: #dc2626;">⛔</b> Blocked Road</span>
+          <span><b style="color: #ea580c;">⚠️</b> Damaged Road</span>
+          <span><b style="color: #d97706;">🚧</b> Maintenance</span>
+          <span><b style="color: #16a34a;">✅</b> Resolved</span>
+        </div>
+
+        <!-- Road Issues Live Alert Bar (in Route Optimizer) -->
+        <div id="optimizerRoadIssuesBar" style="display:none; background:#fffbeb; border:1px solid #fde68a; border-radius:9px; padding:12px 16px; margin-top:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:22px;">⚠️</span>
+              <div>
+                <b style="color:#b45309; font-size:13.5px;" id="optIssuesAlertCount">Active Road Issues Reported</b>
+                <div style="font-size:12px; color:#92400e;" id="optIssuesAlertDesc">Driver-reported road hazards are active. Verify reports to trigger automatic Dijkstra recalculation.</div>
+              </div>
+            </div>
+            <a href="#issues" class="btn btn-outline btn-sm" style="background:#fff; color:#b45309; border-color:#fde68a;">Review & Verify Issues ➔</a>
+          </div>
         </div>
       </div>
 
@@ -973,6 +992,101 @@
         </div>
         <div id="activeRoutesContainer" style="display: grid; gap: 14px;">
           <!-- Route cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: ROAD ISSUES & REROUTING MANAGEMENT -->
+    <section id="tab-issues" class="tab-page" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Driver Road Issue Reports & Route Recalculation</h2>
+            <p>Monitor driver-reported road hazards, activate road closures, and trigger automatic Dijkstra rerouting for active fleet routes.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="loadRoadIssuesTable()">↻ Refresh Issues</button>
+          </div>
+        </div>
+
+        <!-- KPI Row for Issues -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:20px;">
+          <div style="background:var(--surface-subtle); border:1px solid var(--line); border-radius:9px; padding:14px;">
+            <div style="font-size:11px; font-weight:700; color:var(--text-light); text-transform:uppercase;">Total Issues Reported</div>
+            <div id="kpiTotalIssues" style="font-size:24px; font-weight:800; margin-top:4px;">0</div>
+          </div>
+          <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:9px; padding:14px;">
+            <div style="font-size:11px; font-weight:700; color:#b45309; text-transform:uppercase;">Pending Verification</div>
+            <div id="kpiPendingIssues" style="font-size:24px; font-weight:800; color:#b45309; margin-top:4px;">0</div>
+          </div>
+          <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:9px; padding:14px;">
+            <div style="font-size:11px; font-weight:700; color:#b91c1c; text-transform:uppercase;">Active Closed Roads</div>
+            <div id="kpiActiveRestrictions" style="font-size:24px; font-weight:800; color:#b91c1c; margin-top:4px;">0</div>
+          </div>
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:9px; padding:14px;">
+            <div style="font-size:11px; font-weight:700; color:#15803d; text-transform:uppercase;">Resolved Issues</div>
+            <div id="kpiResolvedIssues" style="font-size:24px; font-weight:800; color:#15803d; margin-top:4px;">0</div>
+          </div>
+        </div>
+
+        <!-- Road Issues Filter & Search -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px;">
+          <input type="text" id="issuesSearchInput" placeholder="🔍 Search issues by driver, vehicle, description..." oninput="renderRoadIssuesTable()" style="max-width:320px; padding:7px 12px; font-size:12px; border-radius:6px; border:1px solid var(--line);">
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-outline btn-sm active" id="btnFilterIssueAll" onclick="filterRoadIssues('ALL')">All Reports</button>
+            <button class="btn btn-outline btn-sm" id="btnFilterIssueReported" onclick="filterRoadIssues('REPORTED')">Pending</button>
+            <button class="btn btn-outline btn-sm" id="btnFilterIssueVerified" onclick="filterRoadIssues('VERIFIED')">Verified</button>
+            <button class="btn btn-outline btn-sm" id="btnFilterIssueResolved" onclick="filterRoadIssues('RESOLVED')">Resolved</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Driver</th>
+                <th>Vehicle</th>
+                <th>Location (Lat, Lng)</th>
+                <th>Description</th>
+                <th>Reported Time</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="roadIssuesTableBody">
+              <tr><td colspan="9">Loading road issues…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Active Restrictions Table -->
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Active Road Restrictions & Avoidance Edges</h2>
+            <p>Road network segments currently excluded from Dijkstra route calculations.</p>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Restriction ID</th>
+                <th>Segment Name</th>
+                <th>Source Node</th>
+                <th>Target Node</th>
+                <th>Associated Issue</th>
+                <th>Activated At</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="restrictionsTableBody">
+              <tr><td colspan="7">Loading active road restrictions…</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -1102,6 +1216,20 @@
     </div>
   </div>
 
+  <!-- ROUTE REVISION HISTORY MODAL -->
+  <div class="modal-backdrop" id="modalRevisionHistory">
+    <div class="modal-box" style="max-width: 720px; width: 92%; max-height: 85vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="font-size: 16px; margin: 0;" id="revModalTitle">📜 Route Revision & Recalculation History</h3>
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeRevisionModal()">✕ Close</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Audit trail of dynamic route recalculations, road blockage detections, and alternative paths.</p>
+      <div id="revModalContent">
+        <!-- Revisions timeline filled dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast"></div>
 
@@ -1111,12 +1239,15 @@
     let currentTab = 'dashboard';
     let chartInstances = {};
     let leafMap = null;
-    let mapLayers = { depot: null, trucks: null, stops: null, routes: null };
+    let mapLayers = { depot: null, trucks: null, stops: null, routes: null, issues: null };
     let pointsData = [];
     let requestsData = [];
     let trucksData = [];
     let depotData = null;
     let selectedRequestIds = new Set();
+    let roadIssuesData = [];
+    let roadRestrictionsData = [];
+    let roadIssueFilter = 'ALL';
 
     // Helpers
     const $ = s => document.querySelector(s);
@@ -1155,7 +1286,7 @@
     // Navigation & Tabs
     function handleRouting() {
       const hash = (location.hash || '#dashboard').slice(1);
-      const valid = ['dashboard', 'points', 'depot', 'fleet', 'requests', 'optimizer', 'reports', 'users'];
+      const valid = ['dashboard', 'points', 'depot', 'fleet', 'requests', 'optimizer', 'issues', 'reports', 'users'];
       currentTab = valid.includes(hash) ? hash : 'dashboard';
 
       document.querySelectorAll('.tab-page').forEach(p => p.hidden = p.id !== 'tab-' + currentTab);
@@ -1168,6 +1299,7 @@
         fleet: ['Fleet & Vehicle Management', 'Vehicle capacity, assigned loads, driver assignments and breakdown logs.'],
         requests: ['Collection Requests Queue', 'Review citizen requests, evaluate priorities, and track fulfillment.'],
         optimizer: ['Route Optimizer & GIS Map', 'Capacity-feasible route planning, stop ordering, and road visualization.'],
+        issues: ['Road Issues & Dynamic Recalculation', 'Monitor driver reports, inspect blocked road segments, and activate automatic Dijkstra shortest-path reallocation.'],
         reports: ['Reports & System Auditing', 'Comprehensive operations logs, CSV exports, and audit history.'],
         users: ['User & Role Management', 'Review registered system users, assign administrative or driver permissions, and provision staff.']
       };
@@ -1190,6 +1322,7 @@
       else if (currentTab === 'fleet') loadFleetTable();
       else if (currentTab === 'requests') loadRequestsTable();
       else if (currentTab === 'optimizer') loadOptimizerData();
+      else if (currentTab === 'issues') loadRoadIssuesTable();
       else if (currentTab === 'reports') loadAuditTable();
       else if (currentTab === 'users') loadUsersTable();
     }
@@ -1687,6 +1820,7 @@
       mapLayers.trucks = L.layerGroup().addTo(leafMap);
       mapLayers.stops = L.layerGroup().addTo(leafMap);
       mapLayers.routes = L.layerGroup().addTo(leafMap);
+      mapLayers.issues = L.layerGroup().addTo(leafMap);
 
       leafMap.on('click', handleMapClick);
     }
@@ -2012,7 +2146,7 @@
     }
 
     // Refresh Map Layers
-    function refreshMapData() {
+    async function refreshMapData() {
       if (!leafMap) return;
 
       // 1. Depot Marker
@@ -2044,6 +2178,74 @@
             .addTo(mapLayers.trucks);
         }
       });
+
+      // 3. Road Issues & Hazard Markers
+      if (mapLayers.issues) {
+        mapLayers.issues.clearLayers();
+        try {
+          const issues = await api('/api/road-issues');
+          roadIssuesData = issues;
+
+          // Update alert bar in optimizer if issues exist
+          const activeIssues = issues.filter(i => i.status === 'REPORTED' || i.status === 'VERIFIED');
+          const alertBar = $('#optimizerRoadIssuesBar');
+          if (alertBar) {
+            if (activeIssues.length > 0) {
+              alertBar.style.display = 'block';
+              $('#optIssuesAlertCount').textContent = `${activeIssues.length} Active Road Issue${activeIssues.length > 1 ? 's' : ''} Reported`;
+              $('#optIssuesAlertDesc').textContent = `${activeIssues.filter(i => i.status === 'REPORTED').length} pending verification · ${activeIssues.filter(i => i.status === 'VERIFIED').length} verified closures active in routing graph.`;
+            } else {
+              alertBar.style.display = 'none';
+            }
+          }
+
+          issues.forEach(iss => {
+            if (iss.latitude == null || iss.longitude == null) return;
+            let iconSymbol = '⚠️';
+            let bgColor = '#ea580c';
+            if (iss.issueType === 'ROAD_BLOCKED') {
+              iconSymbol = '⛔';
+              bgColor = '#dc2626';
+            } else if (iss.issueType === 'ROAD_MAINTENANCE') {
+              iconSymbol = '🚧';
+              bgColor = '#d97706';
+            } else if (iss.status === 'RESOLVED') {
+              iconSymbol = '✅';
+              bgColor = '#16a34a';
+            }
+
+            const hazardIcon = L.divIcon({
+              className: '',
+              html: `<div style="background:${bgColor}; color:#fff; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:15px; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.35); cursor:pointer;">${iconSymbol}</div>`,
+              iconSize: [28, 28],
+              iconAnchor: [14, 14]
+            });
+
+            const actionHtml = iss.status === 'REPORTED'
+              ? `<div style="margin-top:8px;"><button class="btn btn-danger btn-sm" style="width:100%; justify-content:center; padding:4px 8px; font-size:11px;" onclick="verifyAndActivateIssue(${iss.id})">⛔ Verify & Recalculate Route</button></div>`
+              : (iss.status === 'VERIFIED'
+                ? `<div style="margin-top:8px;"><button class="btn btn-primary btn-sm" style="width:100%; justify-content:center; padding:4px 8px; font-size:11px;" onclick="resolveRoadIssue(${iss.id})">✅ Mark Road Resolved</button></div>`
+                : '');
+
+            L.marker([iss.latitude, iss.longitude], { icon: hazardIcon })
+              .bindPopup(`
+                <div style="font-size:12px; min-width:180px;">
+                  <b>${iss.issueType === 'ROAD_BLOCKED' ? '⛔ Road Blocked' : (iss.issueType === 'ROAD_DAMAGED' ? '⚠️ Road Damaged' : '🚧 Road Maintenance')} (#${iss.id})</b><br>
+                  <span class="badge ${iss.status === 'VERIFIED' ? 'URGENT' : (iss.status === 'RESOLVED' ? 'COMPLETED' : 'HIGH')}" style="margin:3px 0;">${esc(iss.status)}</span><br>
+                  <b>Reported by:</b> ${esc(iss.driverUsername || 'Driver')} (Vehicle: <code>${esc(iss.truckId || 'N/A')}</code>)<br>
+                  <b>Location:</b> ${iss.latitude.toFixed(4)}, ${iss.longitude.toFixed(4)}<br>
+                  <b>Description:</b> ${esc(iss.description || 'No description provided')}<br>
+                  ${iss.photoData ? `<div style="margin:4px 0;"><img src="${iss.photoData}" style="max-width:160px; max-height:90px; border-radius:4px; border:1px solid #ddd;"></div>` : ''}
+                  <small style="color:var(--text-muted); display:block; margin-top:2px;">${iss.createdAt ? new Date(iss.createdAt).toLocaleString('en-IN') : ''}</small>
+                  ${actionHtml}
+                </div>
+              `)
+              .addTo(mapLayers.issues);
+          });
+        } catch (e) {
+          console.warn('Could not refresh road issues layer:', e);
+        }
+      }
     }
 
     async function loadActiveRoutes() {
@@ -2058,22 +2260,71 @@
           return;
         }
 
-        container.innerHTML = routes.map(r => `
+        container.innerHTML = routes.map(r => {
+          let segs = [];
+          if (r.segmentDetailsJson) {
+            try { segs = JSON.parse(r.segmentDetailsJson); } catch (e) {}
+          }
+          const completedStops = (r.stops || []).filter(s => s.status === 'COMPLETED').length;
+          const totalStops = (r.stops || []).length;
+          const estCollectionMin = totalStops * 5;
+          const totalMissionMin = Number(r.estimatedDurationMin || 0) + estCollectionMin;
+
+          return `
           <div style="background:var(--surface-subtle); border:1px solid var(--line); border-radius:9px; padding:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <div>
-                <b style="font-size:14px;">${esc(r.name)}</b>
+                <b style="font-size:14px;">Route #${r.id}: ${esc(r.name)}</b>
                 <span class="badge ${esc(r.status)}" style="margin-left:6px;">${esc(r.status)}</span>
+                <span class="badge" style="background:#0284c7; color:#fff; font-weight:700; margin-left:4px;">Rev #${r.revisionNumber || 1}</span>
               </div>
               <div style="font-size:12px; color:var(--text-muted);">
-                Vehicle: <b>${esc(r.truckName)}</b> · Total Distance: <b>${fmt(r.totalDistanceKm)} km</b> · Est. Duration: <b>${fmt(r.estimatedDurationMin)} min</b>
+                Vehicle: <b>${esc(r.truckName || r.truckId)}</b> · Driver: <b>${esc(r.assignedDriverUsername || 'Unassigned')}</b>
               </div>
             </div>
 
-            <div style="display:flex; gap:16px; font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-              <span>Total Waste: <b>${fmt(r.totalWasteKg)} kg</b></span>
-              <span>Capacity Util: <b>${fmt(r.capacityUtilizationPct)}%</b></span>
-              <span>Routing Method: <b>${esc(r.routingMethod)}</b></span>
+            ${r.recalculationReason ? `
+            <div style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:9px 12px; border-radius:7px; margin-bottom:12px; font-size:12px; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">⚡</span>
+              <div style="flex:1;">
+                <b>Automatic Shortest Route Recalculation (Revision #${r.revisionNumber}):</b> ${esc(r.recalculationReason)}
+                ${r.lastRecalculatedAt ? `<span style="font-size:11px; opacity:0.85; margin-left:6px;">(${new Date(r.lastRecalculatedAt).toLocaleTimeString('en-IN')})</span>` : ''}
+              </div>
+            </div>` : ''}
+
+            <!-- 5-Grid Metric Cards -->
+            <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-bottom:12px; text-align:center;">
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 4px;">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Road Distance</div>
+                <b style="font-size:13px; color:#047857;">${fmt(r.totalDistanceKm)} km</b>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 4px;">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Driving Time</div>
+                <b style="font-size:13px;">${fmt(r.estimatedDurationMin)} min</b>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 4px;">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Collection Time</div>
+                <b style="font-size:13px;">${estCollectionMin} min</b>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 4px;">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Payload Util</div>
+                <b style="font-size:13px;">${fmt(r.capacityUtilizationPct)}%</b>
+              </div>
+              <div style="background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 4px;">
+                <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Stops Progress</div>
+                <b style="font-size:13px; color:#0284c7;">${completedStops} / ${totalStops}</b>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+              <div>
+                <span><b>Origin:</b> ${esc(r.startLocationName || 'Depot')}</span> ➔ 
+                <span><b>Final Depot:</b> ${esc(r.depotName || 'Central Depot')}</span> · 
+                <span>Total Waste: <b>${fmt(r.totalWasteKg)} kg</b> / ${fmt(r.vehicleCapacityKg)} kg</span>
+              </div>
+              <div>
+                <button class="btn btn-outline btn-sm" onclick="viewRouteRevisionHistory(${r.id})" style="font-size:11px; padding:3px 8px;">📜 View Revisions (${r.revisionNumber || 1})</button>
+              </div>
             </div>
 
             <div style="display:flex; gap:8px; margin-bottom:12px;">
@@ -2081,9 +2332,41 @@
               ${r.status !== 'COMPLETED' && r.status !== 'CANCELLED' ? `<button class="btn btn-danger btn-sm" onclick="cancelRoute(${r.id})">Cancel Route</button>` : ''}
             </div>
 
+            ${segs.length > 0 ? `
+            <!-- Collapsible Segment Breakdown -->
+            <details style="background:#fff; border:1px solid var(--line); border-radius:7px; padding:8px 12px; margin-bottom:10px; font-size:12px;">
+              <summary style="cursor:pointer; font-weight:700; color:var(--text-muted);">
+                🗺️ Segment-by-Segment Breakdown (${segs.length} Road Legs)
+              </summary>
+              <div style="margin-top:8px; overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+                  <thead>
+                    <tr style="border-bottom:1px solid var(--line); text-align:left; color:var(--text-light);">
+                      <th style="padding:4px 6px;">Leg</th>
+                      <th style="padding:4px 6px;">From</th>
+                      <th style="padding:4px 6px;">To</th>
+                      <th style="padding:4px 6px;">Distance</th>
+                      <th style="padding:4px 6px;">Driving Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${segs.map(sg => `
+                      <tr style="border-bottom:1px solid var(--line-subtle);">
+                        <td style="padding:4px 6px; font-weight:700;">#${sg.segmentIndex}</td>
+                        <td style="padding:4px 6px;">${esc(sg.fromName)}</td>
+                        <td style="padding:4px 6px;"><b>${esc(sg.toName)}</b></td>
+                        <td style="padding:4px 6px; color:#047857; font-weight:600;">${fmt(sg.distanceKm)} km</td>
+                        <td style="padding:4px 6px;">${fmt(sg.drivingTimeMin)} min</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </details>` : ''}
+
             <!-- Ordered Stops -->
             <div style="background:#fff; border:1px solid var(--line); border-radius:7px; padding:10px;">
-              <b style="font-size:11px; text-transform:uppercase; color:var(--text-light);">Ordered Stops:</b>
+              <b style="font-size:11px; text-transform:uppercase; color:var(--text-light);">Ordered Collection Stops:</b>
               <ol style="padding-left:20px; font-size:12px; margin-top:6px; line-height:1.8;">
                 ${(r.stops || []).map(s => `
                   <li>
@@ -2095,7 +2378,8 @@
               </ol>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
 
         // Draw Route Geometry on Leaflet Map
         routes.forEach((r, idx) => {
@@ -2317,13 +2601,215 @@
       }
     }
 
+    // -------------------------------------------------------------
+    // ROAD ISSUES & RESTRICTIONS MANAGEMENT
+    // -------------------------------------------------------------
+    async function loadRoadIssuesTable() {
+      try {
+        const [issues, restrictions] = await Promise.all([
+          api('/api/road-issues'),
+          api('/api/road-restrictions')
+        ]);
+        roadIssuesData = issues || [];
+        roadRestrictionsData = restrictions || [];
+
+        // Update KPIs
+        const total = roadIssuesData.length;
+        const pending = roadIssuesData.filter(i => i.status === 'REPORTED').length;
+        const activeRest = roadRestrictionsData.filter(r => r.active).length;
+        const resolved = roadIssuesData.filter(i => i.status === 'RESOLVED').length;
+
+        $('#kpiTotalIssues').textContent = total;
+        $('#kpiPendingIssues').textContent = pending;
+        $('#kpiActiveRestrictions').textContent = activeRest;
+        $('#kpiResolvedIssues').textContent = resolved;
+
+        renderRoadIssuesTable();
+        renderRestrictionsTable();
+      } catch (err) {
+        toast('Error loading road issues: ' + err.message);
+      }
+    }
+
+    function filterRoadIssues(status) {
+      roadIssueFilter = status;
+      ['All', 'Reported', 'Verified', 'Resolved'].forEach(s => {
+        const btn = $('#btnFilterIssue' + s);
+        if (btn) btn.classList.toggle('active', status === s.toUpperCase());
+      });
+      renderRoadIssuesTable();
+    }
+
+    function renderRoadIssuesTable() {
+      const tb = $('#roadIssuesTableBody');
+      if (!tb) return;
+      const search = ($('#issuesSearchInput') ? $('#issuesSearchInput').value.toLowerCase().trim() : '');
+
+      let list = [...roadIssuesData];
+      if (roadIssueFilter !== 'ALL') {
+        list = list.filter(i => i.status === roadIssueFilter);
+      }
+      if (search) {
+        list = list.filter(i =>
+          (i.driverUsername && i.driverUsername.toLowerCase().includes(search)) ||
+          (i.truckId && i.truckId.toLowerCase().includes(search)) ||
+          (i.description && i.description.toLowerCase().includes(search)) ||
+          (i.issueType && i.issueType.toLowerCase().includes(search))
+        );
+      }
+
+      if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No road issues matching the filter.</td></tr>';
+        return;
+      }
+
+      tb.innerHTML = list.map(iss => {
+        const typeLabel = iss.issueType === 'ROAD_BLOCKED' ? '⛔ Road Blocked' :
+                         (iss.issueType === 'ROAD_DAMAGED' ? '⚠️ Road Damaged' :
+                         (iss.issueType === 'ROAD_MAINTENANCE' ? '🚧 Maintenance' : 'Other'));
+        const statusBadge = iss.status === 'VERIFIED' ? 'URGENT' :
+                           (iss.status === 'RESOLVED' ? 'COMPLETED' : 'HIGH');
+
+        return `
+          <tr>
+            <td><b>#${iss.id}</b></td>
+            <td><b>${typeLabel}</b></td>
+            <td><b>${esc(iss.driverUsername || 'Driver')}</b></td>
+            <td><code>${esc(iss.truckId || '—')}</code></td>
+            <td>${iss.latitude != null ? iss.latitude.toFixed(4) + ', ' + iss.longitude.toFixed(4) : '—'}</td>
+            <td>
+              ${esc(iss.description || '—')}
+              ${iss.photoData ? `<div style="margin-top:4px;"><a href="${iss.photoData}" target="_blank" style="font-size:11px; color:#0284c7;">📷 View Attached Photo</a></div>` : ''}
+            </td>
+            <td>${iss.createdAt ? new Date(iss.createdAt).toLocaleString('en-IN') : '—'}</td>
+            <td><span class="badge ${statusBadge}">${esc(iss.status)}</span></td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                ${iss.status === 'REPORTED' ? `
+                  <button class="btn btn-danger btn-sm" onclick="verifyAndActivateIssue(${iss.id})" title="Verify and exclude road edge from routing graph">
+                    ⛔ Verify & Reroute
+                  </button>
+                ` : ''}
+                ${iss.status === 'VERIFIED' ? `
+                  <button class="btn btn-primary btn-sm" onclick="resolveRoadIssue(${iss.id})" title="Mark hazard resolved and restore road">
+                    ✅ Resolve
+                  </button>
+                ` : ''}
+                ${iss.status === 'RESOLVED' ? `<span style="font-size:11px; color:#16a34a;">Resolved</span>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderRestrictionsTable() {
+      const tb = $('#restrictionsTableBody');
+      if (!tb) return;
+      if (!roadRestrictionsData.length) {
+        tb.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No active road restrictions in the routing network. All municipal corridors open.</td></tr>';
+        return;
+      }
+
+      tb.innerHTML = roadRestrictionsData.map(r => `
+        <tr>
+          <td><b>#${r.id}</b></td>
+          <td><b>${esc(r.roadSegmentName)}</b></td>
+          <td><code>${esc(r.sourceNodeId)}</code></td>
+          <td><code>${esc(r.targetNodeId)}</code></td>
+          <td>${r.roadIssueId ? `<a href="#issues" onclick="filterRoadIssues('ALL')">Issue #${r.roadIssueId}</a>` : 'Manual'}</td>
+          <td>${r.createdAt ? new Date(r.createdAt).toLocaleString('en-IN') : '—'}</td>
+          <td><span class="badge ${r.active ? 'URGENT' : 'COMPLETED'}">${r.active ? 'BLOCKED' : 'RESOLVED'}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    async function verifyAndActivateIssue(id) {
+      if (!confirm('Verify issue #' + id + ' and activate road restriction?\n\nThis will immediately exclude the affected road from the routing graph and dynamically recalculate any affected active routes.')) {
+        return;
+      }
+      try {
+        const res = await api('/api/admin/road-issues/' + id + '/verify-and-activate', { method: 'POST' });
+        toast(res.message || 'Road restriction activated! Route recalculation executed.');
+        await loadRoadIssuesTable();
+        if (currentTab === 'optimizer') {
+          await loadActiveRoutes();
+          await refreshMapData();
+        }
+      } catch (err) {
+        toast('Verification error: ' + err.message);
+      }
+    }
+
+    async function resolveRoadIssue(id) {
+      if (!confirm('Mark road issue #' + id + ' as resolved and reopen road segment?')) return;
+      try {
+        const res = await api('/api/admin/road-issues/' + id + '/resolve', { method: 'POST' });
+        toast(res.message || 'Road reopened and marked resolved.');
+        await loadRoadIssuesTable();
+        if (currentTab === 'optimizer') {
+          await loadActiveRoutes();
+          await refreshMapData();
+        }
+      } catch (err) {
+        toast('Resolve error: ' + err.message);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // ROUTE REVISION AUDIT MODAL
+    // -------------------------------------------------------------
+    async function viewRouteRevisionHistory(routeId) {
+      try {
+        const revs = await api('/api/routes/' + routeId + '/revisions');
+        $('#revModalTitle').textContent = `📜 Route #${routeId} Revision History`;
+        const container = $('#revModalContent');
+
+        if (!revs.length) {
+          container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">This route is at initial baseline Revision #1 (no subsequent recalculations).</div>';
+        } else {
+          container.innerHTML = revs.map(rv => `
+            <div style="background:var(--surface-subtle); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <b style="font-size:13.5px; color:#0284c7;">Revision #${rv.revisionNumber}</b>
+                <span style="font-size:11.5px; color:var(--text-muted);">${rv.createdAt ? new Date(rv.createdAt).toLocaleString('en-IN') : ''}</span>
+              </div>
+              <div style="font-size:12px; margin-bottom:6px;">
+                <b>Recalculation Reason:</b> ${esc(rv.reason || 'Dynamic route adjustment')}
+                ${rv.triggeredByRoadIssueId ? `· Triggered by Road Issue <b>#${rv.triggeredByRoadIssueId}</b>` : ''}
+              </div>
+              <div style="display:flex; gap:16px; font-size:11.5px; color:var(--text-muted); background:#fff; padding:6px 10px; border-radius:5px; border:1px solid var(--line-subtle);">
+                <span>Distance: <b>${fmt(rv.totalDistanceKm)} km</b></span>
+                <span>Duration: <b>${fmt(rv.estimatedDurationMin)} mins</b></span>
+                <span>Payload: <b>${fmt(rv.totalWasteKg)} kg</b></span>
+              </div>
+            </div>
+          `).join('');
+        }
+        $('#modalRevisionHistory').classList.add('open');
+      } catch (err) {
+        toast('Could not load revision history: ' + err.message);
+      }
+    }
+
+    function closeRevisionModal() {
+      $('#modalRevisionHistory').classList.remove('open');
+    }
+
     // Initialization
     checkAuth();
     handleRouting();
-    setInterval(() => {
-      if (!document.hidden && currentTab === 'dashboard') loadDashboard();
-      if (!document.hidden && currentTab === 'optimizer') refreshMapData();
-    }, 6000);
+    setInterval(async () => {
+      if (document.hidden) return;
+      if (currentTab === 'dashboard') loadDashboard();
+      if (currentTab === 'optimizer') {
+        await refreshMapData();
+        await loadActiveRoutes();
+      }
+      if (currentTab === 'issues') {
+        await loadRoadIssuesTable();
+      }
+    }, 5000);
   </script>
 </body>
 </html>

@@ -62,6 +62,23 @@ public class RoutePlan {
     private String routeGeometryJson; // GeoJSON line string [[lng,lat],...] or [[lat,lng],...]
 
     @Column(nullable = false)
+    private int revisionNumber = 1;
+
+    private LocalDateTime lastRecalculatedAt;
+
+    @Column(length = 255)
+    private String recalculationReason;
+
+    private Long triggeredByRoadIssueId;
+
+    @Column(length = 50)
+    private String assignedDriverUsername;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String segmentDetailsJson; // JSON array of segments [{segmentIndex, fromName, toName, distanceKm, drivingTimeMin, collectionTimeMin, totalTimeMin}]
+
+    @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     private LocalDateTime startedAt;
@@ -145,4 +162,17 @@ public class RoutePlan {
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
     public List<RouteStop> getStops() { return stops; }
     public void setStops(List<RouteStop> stops) { this.stops = stops; }
+
+    public int getRevisionNumber() { return revisionNumber; }
+    public void setRevisionNumber(int revisionNumber) { this.revisionNumber = revisionNumber; }
+    public LocalDateTime getLastRecalculatedAt() { return lastRecalculatedAt; }
+    public void setLastRecalculatedAt(LocalDateTime lastRecalculatedAt) { this.lastRecalculatedAt = lastRecalculatedAt; }
+    public String getRecalculationReason() { return recalculationReason; }
+    public void setRecalculationReason(String recalculationReason) { this.recalculationReason = recalculationReason; }
+    public Long getTriggeredByRoadIssueId() { return triggeredByRoadIssueId; }
+    public void setTriggeredByRoadIssueId(Long triggeredByRoadIssueId) { this.triggeredByRoadIssueId = triggeredByRoadIssueId; }
+    public String getAssignedDriverUsername() { return assignedDriverUsername; }
+    public void setAssignedDriverUsername(String assignedDriverUsername) { this.assignedDriverUsername = assignedDriverUsername; }
+    public String getSegmentDetailsJson() { return segmentDetailsJson; }
+    public void setSegmentDetailsJson(String segmentDetailsJson) { this.segmentDetailsJson = segmentDetailsJson; }
 }

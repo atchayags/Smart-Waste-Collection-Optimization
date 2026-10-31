@@ -25,6 +25,7 @@
       --red-light: #fef2f2;
       --blue: #0284c7;
       --blue-light: #e0f2fe;
+      --purple: #7c3aed;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +36,7 @@
       font-size: 14px;
       line-height: 1.5;
       padding: 16px;
-      max-width: 580px;
+      max-width: 600px;
       margin: 0 auto;
     }
 
@@ -98,7 +99,7 @@
 
     .btn {
       width: 100%;
-      padding: 12px;
+      padding: 11px;
       border-radius: 8px;
       font-family: inherit;
       font-size: 14px;
@@ -118,6 +119,8 @@
     .btn-outline:hover { background: #f8faf9; }
     .btn-danger { background: var(--red); color: #fff; }
     .btn-danger:hover { background: #991b1b; }
+    .btn-amber { background: var(--amber); color: #fff; }
+    .btn-amber:hover { background: #92400e; }
     .btn-sm { padding: 6px 10px; font-size: 11px; width: auto; }
 
     .next-stop-box {
@@ -165,6 +168,9 @@
     .badge.PLANNED { background: var(--amber-light); color: var(--amber); }
     .badge.IN_PROGRESS { background: var(--blue-light); color: var(--blue); }
     .badge.COMPLETED { background: var(--primary-light); color: var(--primary); }
+    .badge.ACTIVE { background: var(--primary-light); color: var(--primary); }
+    .badge.IN_USE { background: var(--blue-light); color: var(--blue); }
+    .badge.BREAKDOWN { background: var(--red-light); color: var(--red); }
 
     .stops-list {
       list-style: none;
@@ -211,7 +217,7 @@
       opacity: 0;
       pointer-events: none;
       transition: all 0.2s ease;
-      z-index: 1000;
+      z-index: 3000;
       white-space: nowrap;
     }
     #toast.show {
@@ -233,6 +239,22 @@
     </div>
     <button class="btn-logout" onclick="logout()">Log out</button>
   </header>
+
+  <!-- Route Recalculation Alert Banner -->
+  <div id="routeUpdateBanner" style="display:none; background:#fffbeb; border:2px solid #f59e0b; border-radius:10px; padding:12px 16px; margin-bottom:16px; color:#92400e; box-shadow:0 2px 6px rgba(245,158,11,0.15);">
+    <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px;">
+      <span style="font-size:20px;">⚠️</span>
+      <span id="routeBannerTitle">ROUTE UPDATED / REROUTED</span>
+    </div>
+    <div id="routeBannerDesc" style="font-size:12px; margin-top:4px; line-height:1.4;">
+      Route recalculated by dispatcher avoiding road blockage.
+    </div>
+  </div>
+
+  <!-- Big Red Button: Report Road Issue -->
+  <button class="btn btn-danger" style="margin-bottom: 16px; padding: 14px; font-size: 14px; font-weight: 800; background: #dc2626; box-shadow: 0 2px 8px rgba(220,38,38,0.25);" onclick="openRoadIssueModal()">
+    ⚠️ REPORT ROAD ISSUE (BLOCKED / DAMAGED)
+  </button>
 
   <!-- Vehicle Card -->
   <div class="card">
@@ -273,15 +295,39 @@
   <!-- Active Route & Next Stop Card -->
   <div class="card" id="routeCard">
     <div class="card-title">
-      <span>Current Dispatched Route</span>
+      <span>Shared Dispatched Route</span>
       <span class="badge" id="routeStatusBadge">NO ROUTE</span>
     </div>
     <div class="card-sub" id="routeSummaryText">No active route assigned. Contact dispatcher.</div>
 
+    <!-- Route Metrics Dashboard -->
+    <div id="routeMetricsGrid" style="display:none; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:14px; background:#f8faf9; padding:12px; border-radius:8px; border:1px solid var(--line);">
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Total Route Distance</small><div id="metricDistance" style="font-weight:800; font-size:14px;">0.0 km</div></div>
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Est. Driving Time</small><div id="metricDrivingTime" style="font-weight:800; font-size:14px;">0 mins</div></div>
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Collection Service</small><div id="metricCollectTime" style="font-weight:800; font-size:14px;">0 mins</div></div>
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Depot Arrival (ETA)</small><div id="metricDepotEta" style="font-weight:800; font-size:14px; color:var(--primary);">--:--</div></div>
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Stops Progress</small><div id="metricStopsProgress" style="font-weight:800; font-size:13px;">0 / 0</div></div>
+      <div><small style="color:var(--text-muted); font-size:10.5px; text-transform:uppercase;">Remaining Waste</small><div id="metricRemainingWaste" style="font-weight:800; font-size:13px;">0 kg</div></div>
+    </div>
+
     <!-- Live Driver GIS Route Map -->
     <div id="driverMapContainer" style="display:none; margin-bottom: 14px;">
-      <div id="driverMap" style="height: 200px; width: 100%; border-radius: 8px; border: 1px solid var(--line); z-index: 1;"></div>
+      <div id="driverMap" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid var(--line); z-index: 1;"></div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+        <span>🟢 Planned Route · 🔵 Vehicle · 🟣 Depot</span>
+        <span>⛔ Blocked · ⚠️ Damaged</span>
+      </div>
     </div>
+
+    <!-- Collapsible Segment-by-Segment Details -->
+    <details id="routeSegmentsDetails" style="display:none; margin-bottom:14px; border:1px solid var(--line); border-radius:8px; padding:10px 12px; background:#fff;">
+      <summary style="font-size:12px; font-weight:700; cursor:pointer; color:var(--text-muted);">
+        🗺 View Segment-by-Segment Road Distances & Times
+      </summary>
+      <div id="routeSegmentsList" style="margin-top:10px; font-size:12px; display:flex; flex-direction:column; gap:8px;">
+        <!-- Filled by JS -->
+      </div>
+    </details>
 
     <!-- Start Route Button (if PLANNED) -->
     <button class="btn btn-primary" id="btnStartRoute" style="display:none; margin-bottom:14px;" onclick="startRoute()">▶ Begin Route</button>
@@ -313,6 +359,57 @@
     </div>
   </div>
 
+  <!-- Modal: Report Road Issue -->
+  <div id="roadIssueModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:12px; max-width:480px; width:100%; max-height:90vh; overflow-y:auto; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:800;">Report Road Issue</h3>
+        <button style="border:none; background:none; font-size:20px; cursor:pointer;" onclick="closeRoadIssueModal()">×</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px;">Issue Type</label>
+          <select id="issueTypeInput" style="width:100%; padding:9px; border:1px solid var(--line); border-radius:6px; font-family:inherit;">
+            <option value="ROAD_BLOCKED">⛔ Road Blocked (Obstruction / Flooding)</option>
+            <option value="ROAD_DAMAGED">⚠️ Road Damaged (Pothole / Broken Surface)</option>
+            <option value="ROAD_MAINTENANCE">🚧 Road Under Maintenance</option>
+            <option value="OTHER">❓ Other Road Issue</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px;">Location</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+            <button class="btn btn-outline btn-sm" onclick="useGpsForIssue()">📍 Use Current GPS</button>
+            <button class="btn btn-outline btn-sm" onclick="pickIssueOnMap()">🗺 Pick On Map</button>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <input id="issueLatInput" type="number" step="0.0001" placeholder="Latitude (e.g. 8.7930)" style="padding:8px; border:1px solid var(--line); border-radius:6px; font-size:12px;">
+            <input id="issueLngInput" type="number" step="0.0001" placeholder="Longitude (e.g. 78.1360)" style="padding:8px; border:1px solid var(--line); border-radius:6px; font-size:12px;">
+          </div>
+          <input id="issueLocationName" type="text" placeholder="Landmark or road name (optional)" style="width:100%; margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:12px;">
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px;">Description</label>
+          <textarea id="issueDescInput" rows="3" placeholder="Provide details (e.g. fallen tree blocking road between Market and Bus Stand)" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:12px; font-family:inherit;"></textarea>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px;">Photo Attachment (Optional)</label>
+          <input id="issuePhotoInput" type="file" accept="image/*" style="font-size:12px; width:100%;" onchange="handlePhotoUpload(this)">
+          <input id="issuePhotoUrlInput" type="text" placeholder="Or paste photo / image URL" style="width:100%; margin-top:6px; padding:8px; border:1px solid var(--line); border-radius:6px; font-size:12px;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+          <button class="btn btn-outline" onclick="closeRoadIssueModal()">Cancel</button>
+          <button class="btn btn-danger" id="btnSubmitIssue" onclick="submitRoadIssue()">Submit Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast"></div>
 
@@ -325,6 +422,10 @@
     let currentTruck = null;
     let currentRoute = null;
     let currentNextStop = null;
+    let currentRevision = 1;
+    let roadIssuesList = [];
+    let isMapPickingMode = false;
+    let uploadedPhotoBase64 = null;
 
     function toast(msg) {
       const t = $('#toast');
@@ -361,10 +462,15 @@
         const u = await api('/api/auth/me');
         $('#driverHeader').textContent = (u.fullName || u.username) + ' (Driver)';
 
-        const data = await api('/api/driver/my-assignment');
+        const [data, issues] = await Promise.all([
+          api('/api/driver/my-assignment'),
+          api('/api/road-issues').catch(() => [])
+        ]);
+
         currentTruck = data.truck;
         currentRoute = data.route;
         currentNextStop = data.nextStop;
+        roadIssuesList = issues || [];
 
         // Render Vehicle details
         if (currentTruck) {
@@ -384,13 +490,59 @@
           }
         }
 
-        // Render Route details
+        // Render Route details & Shared Sync
         if (currentRoute) {
           $('#routeStatusBadge').textContent = currentRoute.status;
           $('#routeStatusBadge').className = 'badge ' + currentRoute.status;
-          $('#routeSummaryText').textContent = `${currentRoute.name} · ${fmt(currentRoute.totalDistanceKm)} km · Destination: ${currentRoute.depotName || 'Depot'}`;
+          $('#routeSummaryText').textContent = `Route #${currentRoute.id} · ${currentRoute.name} · Rev #${currentRoute.revisionNumber || 1} · Destination: ${currentRoute.depotName || 'Central Depot'}`;
 
           $('#btnStartRoute').style.display = currentRoute.status === 'PLANNED' ? 'block' : 'none';
+
+          // Route Recalculation Alert Banner
+          const banner = $('#routeUpdateBanner');
+          if (currentRoute.revisionNumber > 1 || currentRoute.recalculationReason) {
+            banner.style.display = 'block';
+            $('#routeBannerTitle').textContent = `ROUTE REROUTED (Revision #${currentRoute.revisionNumber || 2})`;
+            $('#routeBannerDesc').textContent = currentRoute.recalculationReason || 'Route was recalculated by dispatcher to bypass road blockage.';
+          } else {
+            banner.style.display = 'none';
+          }
+
+          // Route Metrics Dashboard
+          $('#routeMetricsGrid').style.display = 'grid';
+          $('#metricDistance').textContent = `${fmt(currentRoute.totalDistanceKm)} km`;
+          $('#metricDrivingTime').textContent = `${data.drivingTimeMin || fmt(currentRoute.totalDistanceKm / 28 * 60)} mins`;
+          $('#metricCollectTime').textContent = `${data.collectionTimeMin || (data.remainingStopsCount * 5)} mins`;
+          $('#metricDepotEta').textContent = data.estimatedDepotArrival || 'Calculated on Start';
+          $('#metricStopsProgress').textContent = `${data.completedStopsCount || 0} done / ${data.remainingStopsCount || 0} left`;
+          $('#metricRemainingWaste').textContent = `${fmt(data.remainingWasteKg)} kg`;
+
+          // Segment-by-segment details
+          const segContainer = $('#routeSegmentsDetails');
+          const segList = $('#routeSegmentsList');
+          let segments = [];
+          if (data.segmentDetailsJson || currentRoute.segmentDetailsJson) {
+            try {
+              segments = JSON.parse(data.segmentDetailsJson || currentRoute.segmentDetailsJson);
+            } catch (e) {}
+          }
+          if (segments && segments.length) {
+            segContainer.style.display = 'block';
+            segList.innerHTML = segments.map(seg => `
+              <div style="border-bottom:1px solid var(--line); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <b>Leg ${seg.segmentIndex}:</b> ${esc(seg.fromName)} ➔ <b>${esc(seg.toName)}</b>
+                  <div style="color:var(--text-muted); font-size:11px;">Driving: ${fmt(seg.drivingTimeMin)} min · Service: ${fmt(seg.collectionTimeMin)} min</div>
+                </div>
+                <div style="text-align:right;">
+                  <b>${fmt(seg.distanceKm)} km</b>
+                  <div style="color:var(--primary); font-weight:700; font-size:11px;">~${fmt(seg.totalTimeMin)} min</div>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            segContainer.style.display = 'none';
+          }
 
           // Next Stop
           if (currentNextStop) {
@@ -427,6 +579,9 @@
           $('#routeStatusBadge').textContent = 'NO ROUTE';
           $('#routeStatusBadge').className = 'badge';
           $('#routeSummaryText').textContent = 'No active route currently assigned.';
+          $('#routeUpdateBanner').style.display = 'none';
+          $('#routeMetricsGrid').style.display = 'none';
+          $('#routeSegmentsDetails').style.display = 'none';
           $('#btnStartRoute').style.display = 'none';
           $('#nextStopContainer').style.display = 'none';
           $('#stopsList').innerHTML = '<li style="font-size:12px; color:var(--text-muted); padding:8px 0;">No stops pending.</li>';
@@ -438,10 +593,10 @@
     }
 
     // -------------------------------------------------------------
-    // DRIVER GIS MAP
+    // DRIVER GIS MAP WITH SHARED ROUTE & ROAD ISSUES
     // -------------------------------------------------------------
     let dMap = null;
-    let dMarkers = { truck: null, stops: [], depot: null, poly: null };
+    let dMarkers = { truck: null, stops: [], depot: null, poly: null, issues: [] };
 
     function updateDriverMap(data) {
       if (!window.L) return;
@@ -456,56 +611,71 @@
         dMap = L.map('driverMap').setView([8.7960, 78.1330], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
-          attribution: '© OpenStreetMap'
+          attribution: '© OpenStreetMap contributors'
         }).addTo(dMap);
+
+        dMap.on('click', e => {
+          if (isMapPickingMode) {
+            $('#issueLatInput').value = e.latlng.lat.toFixed(5);
+            $('#issueLngInput').value = e.latlng.lng.toFixed(5);
+            isMapPickingMode = false;
+            $('#roadIssueModal').style.display = 'flex';
+            toast(`Selected map point (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
+          }
+        });
       }
 
-      // Clear existing markers
-      if (dMarkers.truck) { dMap.removeLayer(dMarkers.truck); dMarkers.truck = null; }
+      // Clear existing markers except truck if updating smoothly
       if (dMarkers.depot) { dMap.removeLayer(dMarkers.depot); dMarkers.depot = null; }
       if (dMarkers.poly) { dMap.removeLayer(dMarkers.poly); dMarkers.poly = null; }
       dMarkers.stops.forEach(m => dMap.removeLayer(m));
       dMarkers.stops = [];
+      dMarkers.issues.forEach(m => dMap.removeLayer(m));
+      dMarkers.issues = [];
 
       const pts = [];
 
-      // 1. Truck Location Marker
+      // 1. Live Vehicle Location Marker (Blue)
       if (currentTruck && currentTruck.latitude != null) {
         const truckIcon = L.divIcon({
           className: '',
-          html: '<div style="background:#047857; color:#fff; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:14px; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3)">🚛</div>',
-          iconSize: [28, 28],
-          iconAnchor: [14, 14]
+          html: '<div style="background:#0284c7; color:#fff; width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:15px; border:2.5px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.35)">🚛</div>',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
         });
-        dMarkers.truck = L.marker([currentTruck.latitude, currentTruck.longitude], { icon: truckIcon })
-          .bindPopup('<b>My Vehicle: ' + esc(currentTruck.name) + '</b>')
-          .addTo(dMap);
+        if (dMarkers.truck) {
+          dMarkers.truck.setLatLng([currentTruck.latitude, currentTruck.longitude]);
+        } else {
+          dMarkers.truck = L.marker([currentTruck.latitude, currentTruck.longitude], { icon: truckIcon })
+            .bindPopup('<b>Vehicle: ' + esc(currentTruck.name) + ' (' + esc(currentTruck.id) + ')</b><br>Live GPS Position')
+            .addTo(dMap);
+        }
         pts.push([currentTruck.latitude, currentTruck.longitude]);
       }
 
-      // 2. Depot Marker
-      const dLat = currentRoute ? (currentRoute.depotLatitude != null ? currentRoute.depotLatitude : currentRoute.depotLat) : null;
-      const dLng = currentRoute ? (currentRoute.depotLongitude != null ? currentRoute.depotLongitude : currentRoute.depotLng) : null;
+      // 2. Central Depot Marker (Purple)
+      const dLat = currentRoute ? (currentRoute.depotLatitude != null ? currentRoute.depotLatitude : currentRoute.depotLat) : 8.7960;
+      const dLng = currentRoute ? (currentRoute.depotLongitude != null ? currentRoute.depotLongitude : currentRoute.depotLng) : 78.1330;
       if (dLat != null && dLng != null) {
         const depotIcon = L.divIcon({
           className: '',
-          html: '<div style="background:#0369a1; color:#fff; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:13px; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3)">🏭</div>',
-          iconSize: [26, 26],
-          iconAnchor: [13, 13]
+          html: '<div style="background:#7c3aed; color:#fff; width:28px; height:28px; border-radius:8px; display:grid; place-items:center; font-size:14px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3)">🏭</div>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
         });
         dMarkers.depot = L.marker([dLat, dLng], { icon: depotIcon })
-          .bindPopup('<b>Depot: ' + esc(currentRoute.depotName || 'Depot') + '</b>')
+          .bindPopup('<b>Final Destination: ' + esc(currentRoute?.depotName || 'Central Depot') + '</b><br>Unloading Facility')
           .addTo(dMap);
         pts.push([dLat, dLng]);
       }
 
-      // 3. Route Stops
+      // 3. Numbered Collection Stops
       const stops = (data && data.stops) || [];
       stops.forEach(s => {
         if (s.latitude == null) return;
         const isDone = s.status === 'COMPLETED';
         const isNext = currentNextStop && currentNextStop.id === s.id;
-        const bg = isDone ? '#9ca3af' : (isNext ? '#dc2626' : '#0284c7');
+        const bg = isDone ? '#9ca3af' : (isNext ? '#dc2626' : '#047857');
         const numIcon = L.divIcon({
           className: '',
           html: `<div style="background:${bg}; color:#fff; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:11px; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,0.3)">${s.stopOrder}</div>`,
@@ -513,26 +683,159 @@
           iconAnchor: [12, 12]
         });
         const m = L.marker([s.latitude, s.longitude], { icon: numIcon })
-          .bindPopup(`<b>Stop #${s.stopOrder}: ${esc(s.pointName)}</b><br>${fmt(s.expectedWasteKg)} kg · ${s.status}`)
+          .bindPopup(`<b>Stop #${s.stopOrder}: ${esc(s.pointName)}</b><br>${fmt(s.expectedWasteKg)} kg · Priority: ${esc(s.priority)}<br>Status: <b>${esc(s.status)}</b>`)
           .addTo(dMap);
         dMarkers.stops.push(m);
         pts.push([s.latitude, s.longitude]);
       });
 
-      // 4. Route Polyline
+      // 4. Shared Persisted Route Polyline (Green)
       if (currentRoute && currentRoute.routeGeometryJson) {
         try {
           const coords = JSON.parse(currentRoute.routeGeometryJson);
           const latlngs = coords.map(c => [c[1], c[0]]);
-          dMarkers.poly = L.polyline(latlngs, { color: '#047857', weight: 4, opacity: 0.85 }).addTo(dMap);
+          dMarkers.poly = L.polyline(latlngs, { color: '#047857', weight: 4.5, opacity: 0.85 }).addTo(dMap);
+          latlngs.forEach(ll => pts.push(ll));
         } catch (e) {}
       }
 
-      if (pts.length > 0) {
+      // 5. Road Issues Markers (Red = Blocked, Orange = Damaged, Amber = Maintenance, Green = Resolved)
+      roadIssuesList.forEach(issue => {
+        if (issue.latitude == null || issue.longitude == null) return;
+        let iconHtml = '⛔';
+        let bgCol = '#dc2626';
+        if (issue.status === 'RESOLVED') {
+          iconHtml = '✅'; bgCol = '#047857';
+        } else if (issue.issueType === 'ROAD_DAMAGED') {
+          iconHtml = '⚠️'; bgCol = '#ea580c';
+        } else if (issue.issueType === 'ROAD_MAINTENANCE') {
+          iconHtml = '🚧'; bgCol = '#d97706';
+        }
+
+        const issueIcon = L.divIcon({
+          className: '',
+          html: `<div style="background:${bgCol}; color:#fff; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12px; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.35)">${iconHtml}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+        const m = L.marker([issue.latitude, issue.longitude], { icon: issueIcon })
+          .bindPopup(`<b>${esc(issue.issueType)}</b> (Report #${issue.id})<br>${esc(issue.description)}<br>Status: <b>${esc(issue.status)}</b><br>Location: ${esc(issue.locationName || '')}`)
+          .addTo(dMap);
+        dMarkers.issues.push(m);
+      });
+
+      if (pts.length > 0 && !window.driverMapInitialFitDone) {
+        window.driverMapInitialFitDone = true;
         setTimeout(() => {
           dMap.invalidateSize();
           dMap.fitBounds(L.latLngBounds(pts), { padding: [25, 25] });
         }, 150);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // ROAD ISSUE REPORTING MODAL
+    // -------------------------------------------------------------
+    function openRoadIssueModal() {
+      $('#roadIssueModal').style.display = 'flex';
+      if (currentTruck && currentTruck.latitude != null) {
+        $('#issueLatInput').value = currentTruck.latitude.toFixed(5);
+        $('#issueLngInput').value = currentTruck.longitude.toFixed(5);
+      }
+    }
+
+    function closeRoadIssueModal() {
+      $('#roadIssueModal').style.display = 'none';
+      isMapPickingMode = false;
+    }
+
+    function useGpsForIssue() {
+      if (currentTruck && currentTruck.latitude != null) {
+        $('#issueLatInput').value = currentTruck.latitude.toFixed(5);
+        $('#issueLngInput').value = currentTruck.longitude.toFixed(5);
+        toast('Loaded current vehicle GPS coordinates.');
+      } else if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            $('#issueLatInput').value = pos.coords.latitude.toFixed(5);
+            $('#issueLngInput').value = pos.coords.longitude.toFixed(5);
+            toast('Acquired device GPS fix.');
+          },
+          err => toast('GPS error: ' + err.message),
+          { timeout: 8000 }
+        );
+      } else {
+        toast('GPS not available.');
+      }
+    }
+
+    function pickIssueOnMap() {
+      isMapPickingMode = true;
+      $('#roadIssueModal').style.display = 'none';
+      toast('Click any road or point on the map above to select location.');
+      const mapEl = $('#driverMapContainer');
+      if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function handlePhotoUpload(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          uploadedPhotoBase64 = e.target.result;
+          toast('Photo attached.');
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    async function submitRoadIssue() {
+      const issueType = $('#issueTypeInput').value;
+      const lat = parseFloat($('#issueLatInput').value);
+      const lng = parseFloat($('#issueLngInput').value);
+      const locName = $('#issueLocationName').value.trim();
+      const desc = $('#issueDescInput').value.trim();
+      const photoUrl = $('#issuePhotoUrlInput').value.trim() || uploadedPhotoBase64;
+
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        alert('Please enter or pick valid coordinates (Latitude -90 to 90, Longitude -180 to 180).');
+        return;
+      }
+      if (!desc) {
+        alert('Please enter a brief description of the issue.');
+        return;
+      }
+
+      const btn = $('#btnSubmitIssue');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      try {
+        const payload = {
+          issueType,
+          latitude: lat,
+          longitude: lng,
+          locationName: locName || 'Reported Location',
+          description: desc,
+          photoUrl: photoUrl || null,
+          truckId: currentTruck ? currentTruck.id : null
+        };
+
+        const res = await api('/api/driver/road-issues', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+
+        toast('Road issue #' + res.id + ' reported successfully! Dispatcher has been alerted.');
+        closeRoadIssueModal();
+        $('#issueDescInput').value = '';
+        $('#issuePhotoUrlInput').value = '';
+        uploadedPhotoBase64 = null;
+        loadDriverData();
+      } catch (err) {
+        alert('Submission failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit Report';
       }
     }
 
@@ -680,7 +983,7 @@
       }
     }
 
-    // Init & Refresh
+    // Initial Load & Reliable 5-second Polling
     loadDriverData();
     setInterval(() => {
       if (!document.hidden) loadDriverData();
